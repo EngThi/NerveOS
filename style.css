@@ -1,0 +1,39 @@
+:root {
+    --bg:      #060a0f;
+    --panel:   #0c1118;
+    --border:  rgba(0,255,180,0.15);
+    --accent:  #00ffb4;
+    --accent2: #00c8ff;
+    --text:    #d4f0e8;
+    --muted:   #4a6b5e;
+    --danger:  #ff4f6e;
+    --bar-h:   42px;
+    --font:    ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Courier New",monospace;
+  }
+  
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);
+       height:100vh;overflow:hidden;user-select:none}
+  
+  /* ── DESKTOP ── */
+  #desktop{position:relative;width:100vw;height:100vh}
+  .hidden{display:none!important}
+  
+  /* ── TASKBAR ── */
+  #taskbar{
+    position:fixed;bottom:0;left:0;right:0;height:var(--bar-h);
+    background:rgba(6,10,15,.92);border-top:1px solid var(--border);
+    backdrop-filter:blur(12px);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 16px;z-index:900;
+  }
+  .logo{color:var(--accent);font-weight:700;font-size:14px;letter-spacing:1px}
+  #taskbar-center{display:flex;gap:8px}
+  .task-btn{
+    padding:6px 14px;background:transparent;
+    border:1px solid var(--border);border-radius:8px;
+    color:var(--text);font-family:var(--font);font-size:12px;
+    cursor:pointer;transition:border-color .15s,color .15s;
+  }
+  .task-btn:hover{border-color:var(--accent);color:var(--accent)}
+  #clock{color:var(--muted);font-size:12px}
