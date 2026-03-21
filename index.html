@@ -7,8 +7,15 @@
 </head>
 <body>
 
+<!-- BOOT SCREEN -->
+<div id="boot">
+  <div class="boot-text">
+    <span id="boot-line"></span><span class="cursor">█</span>
+  </div>
+</div>
+
 <!-- DESKTOP -->
-<div id="desktop">
+<div id="desktop" class="hidden">
 
   <!-- Taskbar -->
   <div id="taskbar">
@@ -16,13 +23,88 @@
       <span class="logo">⬡ NerveOS</span>
     </div>
     <div id="taskbar-center">
-      <button class="task-btn">Terminal</button>
-      <button class="task-btn">HW Monitor</button>
-      <button class="task-btn">Notes</button>
-      <button class="task-btn">About</button>
+      <button class="task-btn" data-open="terminal">Terminal</button>
+      <button class="task-btn" data-open="monitor">HW Monitor</button>
+      <button class="task-btn" data-open="notes">Notes</button>
+      <button class="task-btn" data-open="about">About</button>
     </div>
     <div id="taskbar-right">
       <span id="clock"></span>
+    </div>
+  </div>
+
+  <!-- Window: Terminal -->
+  <div class="window hidden" id="win-terminal" style="top:80px;left:60px;width:550px">
+    <div class="win-bar">
+      <span>⬡ nerve-terminal</span>
+      <button class="win-close" data-close="terminal">×</button>
+    </div>
+    <div class="win-body terminal-body" id="term-output"></div>
+    <div class="terminal-input-row">
+      <span class="prompt">nerve@os:~$</span>
+      <input id="term-input" autocomplete="off" spellcheck="false" placeholder="type 'help'..." />
+    </div>
+  </div>
+
+  <!-- Window: HW Monitor -->
+  <div class="window hidden" id="win-monitor" style="top:80px;left:650px;width:340px">
+    <div class="win-bar">
+      <span>⬡ hw-monitor</span>
+      <button class="win-close" data-close="monitor">×</button>
+    </div>
+    <div class="win-body">
+      <div class="monitor-grid">
+        <div class="stat-card">
+          <div class="stat-label">MCU</div>
+          <div class="stat-val" id="stat-mcu">ESP32-S3</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">STATUS</div>
+          <div class="stat-val online" id="stat-status">LINKED</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">ENCODER</div>
+          <div class="stat-val" id="stat-enc">0 rpm</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">OLED</div>
+          <div class="stat-val" id="stat-oled">128×128</div>
+        </div>
+        <div class="stat-card full">
+          <div class="stat-label">UPTIME</div>
+          <div class="stat-val" id="stat-uptime">00:00:00</div>
+        </div>
+      </div>
+      <div class="pulse-bar"><div class="pulse-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- Window: Notes -->
+  <div class="window hidden" id="win-notes" style="top:250px;left:200px;width:400px">
+    <div class="win-bar">
+      <span>⬡ notes</span>
+      <button class="win-close" data-close="notes">×</button>
+    </div>
+    <div class="win-body">
+      <textarea id="notes-area" placeholder="Persistent session notes..."></textarea>
+    </div>
+  </div>
+
+  <!-- Window: About -->
+  <div class="window hidden" id="win-about" style="top:180px;left:450px;width:360px">
+    <div class="win-bar">
+      <span>⬡ about</span>
+      <button class="win-close" data-close="about">×</button>
+    </div>
+    <div class="win-body about-body">
+      <div class="about-logo">⬡</div>
+      <div class="about-title">NerveOS v0.2.0</div>
+      <div class="about-sub">The Nerve Cyberdeck Core</div>
+      <hr class="about-hr"/>
+      <div class="about-row"><span>Hardware</span><span>ESP32-S3 / RP2040</span></div>
+      <div class="about-row"><span>Frontend</span><span>Vanilla JS (Standard compliant)</span></div>
+      <div class="about-row"><span>Status</span><span>Production Ready</span></div>
+      <a class="about-link" href="https://github.com/EngThi/The-Nerve" target="_blank">View Docs →</a>
     </div>
   </div>
 
