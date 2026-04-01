@@ -12,7 +12,15 @@ const CONFIG = {
 const STATE = {
   topZ: 100,
   drag: null,
-  uptime: 0
+  uptime: 0,
+  cpuHistory: new Array(30).fill(0),
+  fs: {
+    '/': { type: 'dir', content: ['bin', 'usr', 'dev', 'readme.txt'] },
+    '/bin': { type: 'dir', content: ['nerve-core', 'panic-auth'] },
+    '/dev': { type: 'dir', content: ['oled0', 'serial0', 'encoder0'] },
+    '/readme.txt': { type: 'file', content: 'NerveOS v0.2.0\nSystem initialized.\nDirector access only.' }
+  },
+  currentDir: '/'
 };
 
 // ── BOOT SEQUENCE ──────────────────────────────────
@@ -44,28 +52,21 @@ async function runBoot() {
 
 // ── WINDOW MANAGEMENT ─────────────────────────────
 function initWindows() {
-  // Open buttons
   document.querySelectorAll('[data-open]').forEach(btn => {
     btn.addEventListener('click', () => openWindow(btn.dataset.open));
   });
 
-  // Close buttons
   document.querySelectorAll('[data-close]').forEach(btn => {
     btn.addEventListener('click', () => closeWindow(btn.dataset.close));
   });
 
-  // Dragging logic
   document.querySelectorAll('.win-bar').forEach(bar => {
     bar.addEventListener('mousedown', (e) => {
       if (e.target.tagName === 'BUTTON') return;
       const win = bar.closest('.window');
       bringToFront(win);
       const rect = win.getBoundingClientRect();
-      STATE.drag = {
-        win,
-        dx: e.clientX - rect.left,
-        dy: e.clientY - rect.top
-      };
+      STATE.drag = { win, dx: e.clientX - rect.left, dy: e.clientY - rect.top };
     });
   });
 
@@ -97,8 +98,27 @@ function bringToFront(el) {
 
 // ── TERMINAL ──────────────────────────────────────
 const COMMANDS = {
-  help: () => `Available: help, status, clear, echo [msg], uptime, version`,
+  help: () => `Available: help, status, ls, cd [dir], cat [file], clear, echo [msg], uptime, version`,
   status: () => `MCU: ESP32-S3\nBattery: 88%\nSignal: Strong\nLink: /dev/ttyACM0`,
+  ls: () => {
+    const dir = STATE.fs[STATE.currentDir];
+    return dir.content.join('  ');
+  },
+  cd: (args) => {
+    const target = args[0] === '..' ? '/' : (args[0]?.startsWith('/') ? args[0] : (STATE.currentDir === '/' ? '/' + args[0] : STATE.currentDir + '/' + args[0]));
+    if (STATE.fs[target] && STATE.fs[target].type === 'dir') {
+      STATE.currentDir = target;
+      return `Changed directory to ${target}`;
+    }
+    return `Directory not found: ${args[0]}`;
+  },
+  cat: (args) => {
+    const target = args[0]?.startsWith('/') ? args[0] : (STATE.currentDir === '/' ? '/' + args[0] : STATE.currentDir + '/' + args[0]);
+    if (STATE.fs[target] && STATE.fs[target].type === 'file') {
+      return STATE.fs[target].content;
+    }
+    return `File not found: ${args[0]}`;
+  },
   clear: () => { document.getElementById('term-output').innerHTML = ''; return null; },
   echo: (args) => args.join(' '),
   uptime: () => {
@@ -118,7 +138,7 @@ function initTerminal() {
       input.value = '';
       if (!val) return;
 
-      printLine(`nerve@os:~$ ${val}`, 'muted');
+      printLine(`nerve@os:${STATE.currentDir}$ ${val}`, 'muted');
       
       const [cmd, ...args] = val.split(' ');
       if (COMMANDS[cmd]) {
@@ -150,6 +170,8 @@ function initClock() {
 function initMonitor() {
   const uptimeEl = document.getElementById('stat-uptime');
   const encEl = document.getElementById('stat-enc');
+  const canvas = document.getElementById('cpu-graph');
+  const ctx = canvas.getContext('2d');
   
   setInterval(() => {
     STATE.uptime++;
@@ -158,7 +180,59 @@ function initMonitor() {
     const s = String(STATE.uptime % 60).padStart(2, '0');
     uptimeEl.textContent = `${h}:${m}:${s}`;
     encEl.textContent = `${Math.floor(Math.random() * 5)} rpm`;
+
+    // CPU Graph logic
+    STATE.cpuHistory.push(Math.random() * 60 + 10);
+    STATE.cpuHistory.shift();
+    drawGraph(ctx, STATE.cpuHistory);
   }, 1000);
+}
+
+function drawGraph(ctx, data) {
+  ctx.clearRect(0, 0, 300, 60);
+  ctx.strokeStyle = '#00ffb4';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  const step = 300 / (data.length - 1);
+  data.forEach((val, i) => {
+    const x = i * step;
+    const y = 60 - (val / 100 * 60);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  
+  // Gradient fill
+  ctx.lineTo(300, 60);
+  ctx.lineTo(0, 60);
+  const grad = ctx.createLinearGradient(0, 0, 0, 60);
+  grad.addColorStop(0, 'rgba(0, 255, 180, 0.2)');
+  grad.addColorStop(1, 'rgba(0, 255, 180, 0)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+}
+
+function initSettings() {
+  // Accent Color
+  document.querySelectorAll('.color-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      const color = opt.dataset.color;
+      document.documentElement.style.setProperty('--accent', color);
+    });
+  });
+
+  // Wallpaper
+  const wallSelect = document.getElementById('wallpaper-select');
+  const desktop = document.getElementById('desktop');
+  const wallpapers = {
+    cyber1: 'url("https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop")',
+    cyber2: 'url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop")',
+    cyber3: 'url("https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop")'
+  };
+
+  wallSelect.addEventListener('change', (e) => {
+    desktop.style.backgroundImage = wallpapers[e.target.value];
+  });
 }
 
 function initNotes() {
@@ -174,6 +248,7 @@ function initSystem() {
   initClock();
   initTerminal();
   initMonitor();
+  initSettings();
   initNotes();
   openWindow('terminal');
 }

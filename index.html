@@ -25,6 +25,7 @@
     <div id="taskbar-center">
       <button class="task-btn" data-open="terminal">Terminal</button>
       <button class="task-btn" data-open="monitor">HW Monitor</button>
+      <button class="task-btn" data-open="settings">Settings</button>
       <button class="task-btn" data-open="notes">Notes</button>
       <button class="task-btn" data-open="about">About</button>
     </div>
@@ -62,20 +63,46 @@
           <div class="stat-label">STATUS</div>
           <div class="stat-val online" id="stat-status">LINKED</div>
         </div>
+        <div class="stat-card full">
+          <div class="stat-label">CPU LOAD %</div>
+          <canvas id="cpu-graph" width="300" height="60" style="width:100%;height:60px;margin-top:8px;"></canvas>
+        </div>
         <div class="stat-card">
           <div class="stat-label">ENCODER</div>
           <div class="stat-val" id="stat-enc">0 rpm</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">OLED</div>
-          <div class="stat-val" id="stat-oled">128×128</div>
-        </div>
-        <div class="stat-card full">
           <div class="stat-label">UPTIME</div>
           <div class="stat-val" id="stat-uptime">00:00:00</div>
         </div>
       </div>
-      <div class="pulse-bar"><div class="pulse-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- Window: Settings -->
+  <div class="window hidden" id="win-settings" style="top:150px;left:300px;width:320px">
+    <div class="win-bar">
+      <span>⬡ settings</span>
+      <button class="win-close" data-close="settings">×</button>
+    </div>
+    <div class="win-body">
+      <div class="settings-group">
+        <div class="stat-label">Accent Color</div>
+        <div class="color-grid">
+          <div class="color-opt" style="background:#00ffb4" data-color="#00ffb4"></div>
+          <div class="color-opt" style="background:#00c8ff" data-color="#00c8ff"></div>
+          <div class="color-opt" style="background:#ff4f6e" data-color="#ff4f6e"></div>
+          <div class="color-opt" style="background:#ffbe00" data-color="#ffbe00"></div>
+        </div>
+      </div>
+      <div class="settings-group" style="margin-top:20px">
+        <div class="stat-label">Wallpaper</div>
+        <select id="wallpaper-select" class="settings-select">
+          <option value="cyber1">Neon Grid</option>
+          <option value="cyber2">Deep Space</option>
+          <option value="cyber3">Terminal Green</option>
+        </select>
+      </div>
     </div>
   </div>
 
