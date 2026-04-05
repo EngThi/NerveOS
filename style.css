@@ -92,6 +92,12 @@ body {
   box-shadow: 0 0 15px rgba(0, 255, 180, 0.2);
   transform: translateY(-2px);
 }
+.task-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0, 255, 180, 0.15);
+  box-shadow: inset 0 0 10px rgba(0, 255, 180, 0.1);
+}
 #clock { color: var(--accent2); font-weight: 700; font-size: 13px; }
 
 /* ── WINDOW ── */

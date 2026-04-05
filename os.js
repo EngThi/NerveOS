@@ -1,6 +1,6 @@
 /**
- * NerveOS v0.2.0 - Core System Logic
- * Architecture: Event-driven, modular UI management.
+ * NerveOS v0.2.1 - Core System Logic
+ * Updates: LocalStorage persistence, Taskbar active states, Terminal theme command.
  */
 
 const CONFIG = {
@@ -18,20 +18,17 @@ const STATE = {
     '/': { type: 'dir', content: ['bin', 'usr', 'dev', 'readme.txt'] },
     '/bin': { type: 'dir', content: ['nerve-core', 'panic-auth'] },
     '/dev': { type: 'dir', content: ['oled0', 'serial0', 'encoder0'] },
-    '/readme.txt': { type: 'file', content: 'NerveOS v0.2.0\nSystem initialized.\nDirector access only.' }
+    '/readme.txt': { type: 'file', content: 'NerveOS v0.2.1\nPersistence Layer Active.\nAbsolute Cinema Mode: ON' }
   },
   currentDir: '/'
 };
 
 // ── BOOT SEQUENCE ──────────────────────────────────
 const BOOT_LINES = [
-  "NerveOS v0.2.0 initializing...",
-  "Kernel: Linux 6.1.0-nerve-custom",
-  "Checking hardware interlocks...",
+  "NerveOS v0.2.1 initializing...",
+  "Loading user preferences...",
+  "Persistence layer: READY",
   "ESP32-S3 Link: ESTABLISHED",
-  "OLED Controller: SSD1351 ready",
-  "Rotary Encoder: EC11 linked",
-  "Loading Absolute Cinema UI...",
   "System status: NOMINAL",
   "Welcome back, Director."
 ];
@@ -84,12 +81,16 @@ function openWindow(id) {
   if (win) {
     win.classList.remove('hidden');
     bringToFront(win);
+    document.querySelector(`[data-open="${id}"]`)?.classList.add('active');
   }
 }
 
 function closeWindow(id) {
   const win = document.getElementById(`win-${id}`);
-  if (win) win.classList.add('hidden');
+  if (win) {
+    win.classList.add('hidden');
+    document.querySelector(`[data-open="${id}"]`)?.classList.remove('active');
+  }
 }
 
 function bringToFront(el) {
@@ -98,34 +99,31 @@ function bringToFront(el) {
 
 // ── TERMINAL ──────────────────────────────────────
 const COMMANDS = {
-  help: () => `Available: help, status, ls, cd [dir], cat [file], clear, echo [msg], uptime, version`,
-  status: () => `MCU: ESP32-S3\nBattery: 88%\nSignal: Strong\nLink: /dev/ttyACM0`,
-  ls: () => {
-    const dir = STATE.fs[STATE.currentDir];
-    return dir.content.join('  ');
+  help: () => `Available: help, status, ls, cd, cat, theme [color], clear, uptime, version`,
+  status: () => `MCU: ESP32-S3 | Link: OK | Persistence: Active`,
+  theme: (args) => {
+    if (!args[0]) return "Usage: theme [color-hex]";
+    const color = args[0];
+    document.documentElement.style.setProperty('--accent', color);
+    localStorage.setItem('nerve_accent', color);
+    return `Theme accent updated to ${color}`;
   },
+  ls: () => STATE.fs[STATE.currentDir].content.join('  '),
   cd: (args) => {
     const target = args[0] === '..' ? '/' : (args[0]?.startsWith('/') ? args[0] : (STATE.currentDir === '/' ? '/' + args[0] : STATE.currentDir + '/' + args[0]));
     if (STATE.fs[target] && STATE.fs[target].type === 'dir') {
       STATE.currentDir = target;
-      return `Changed directory to ${target}`;
+      return `Dir: ${target}`;
     }
-    return `Directory not found: ${args[0]}`;
+    return `Error: ${args[0]} not found.`;
   },
   cat: (args) => {
     const target = args[0]?.startsWith('/') ? args[0] : (STATE.currentDir === '/' ? '/' + args[0] : STATE.currentDir + '/' + args[0]);
-    if (STATE.fs[target] && STATE.fs[target].type === 'file') {
-      return STATE.fs[target].content;
-    }
-    return `File not found: ${args[0]}`;
+    return STATE.fs[target]?.content || `Error: File not found.`;
   },
   clear: () => { document.getElementById('term-output').innerHTML = ''; return null; },
-  echo: (args) => args.join(' '),
-  uptime: () => {
-    const s = Math.floor((Date.now() - CONFIG.START_TIME) / 1000);
-    return `Uptime: ${Math.floor(s/60)}m ${s%60}s`;
-  },
-  version: () => `NerveOS v0.2.0 "Absolute Cinema"`
+  uptime: () => `${Math.floor((Date.now() - CONFIG.START_TIME)/1000)}s`,
+  version: () => `NerveOS v0.2.1`
 };
 
 function initTerminal() {
@@ -137,9 +135,7 @@ function initTerminal() {
       const val = input.value.trim();
       input.value = '';
       if (!val) return;
-
       printLine(`nerve@os:${STATE.currentDir}$ ${val}`, 'muted');
-      
       const [cmd, ...args] = val.split(' ');
       if (COMMANDS[cmd]) {
         const res = COMMANDS[cmd](args);
@@ -175,13 +171,8 @@ function initMonitor() {
   
   setInterval(() => {
     STATE.uptime++;
-    const h = String(Math.floor(STATE.uptime / 3600)).padStart(2, '0');
-    const m = String(Math.floor((STATE.uptime % 3600) / 60)).padStart(2, '0');
-    const s = String(STATE.uptime % 60).padStart(2, '0');
-    uptimeEl.textContent = `${h}:${m}:${s}`;
+    uptimeEl.textContent = new Date(STATE.uptime * 1000).toISOString().substr(11, 8);
     encEl.textContent = `${Math.floor(Math.random() * 5)} rpm`;
-
-    // CPU Graph logic
     STATE.cpuHistory.push(Math.random() * 60 + 10);
     STATE.cpuHistory.shift();
     drawGraph(ctx, STATE.cpuHistory);
@@ -190,38 +181,19 @@ function initMonitor() {
 
 function drawGraph(ctx, data) {
   ctx.clearRect(0, 0, 300, 60);
-  ctx.strokeStyle = '#00ffb4';
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
   ctx.lineWidth = 2;
   ctx.beginPath();
   const step = 300 / (data.length - 1);
   data.forEach((val, i) => {
     const x = i * step;
     const y = 60 - (val / 100 * 60);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   });
   ctx.stroke();
-  
-  // Gradient fill
-  ctx.lineTo(300, 60);
-  ctx.lineTo(0, 60);
-  const grad = ctx.createLinearGradient(0, 0, 0, 60);
-  grad.addColorStop(0, 'rgba(0, 255, 180, 0.2)');
-  grad.addColorStop(1, 'rgba(0, 255, 180, 0)');
-  ctx.fillStyle = grad;
-  ctx.fill();
 }
 
 function initSettings() {
-  // Accent Color
-  document.querySelectorAll('.color-opt').forEach(opt => {
-    opt.addEventListener('click', () => {
-      const color = opt.dataset.color;
-      document.documentElement.style.setProperty('--accent', color);
-    });
-  });
-
-  // Wallpaper
   const wallSelect = document.getElementById('wallpaper-select');
   const desktop = document.getElementById('desktop');
   const wallpapers = {
@@ -230,17 +202,36 @@ function initSettings() {
     cyber3: 'url("https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop")'
   };
 
+  // Load Saved Preferences
+  const savedAccent = localStorage.getItem('nerve_accent');
+  if (savedAccent) document.documentElement.style.setProperty('--accent', savedAccent);
+
+  const savedWallpaper = localStorage.getItem('nerve_wallpaper');
+  if (savedWallpaper) {
+    desktop.style.backgroundImage = wallpapers[savedWallpaper];
+    wallSelect.value = savedWallpaper;
+  }
+
+  // Event Listeners
+  document.querySelectorAll('.color-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      const color = opt.dataset.color;
+      document.documentElement.style.setProperty('--accent', color);
+      localStorage.setItem('nerve_accent', color);
+    });
+  });
+
   wallSelect.addEventListener('change', (e) => {
-    desktop.style.backgroundImage = wallpapers[e.target.value];
+    const val = e.target.value;
+    desktop.style.backgroundImage = wallpapers[val];
+    localStorage.setItem('nerve_wallpaper', val);
   });
 }
 
 function initNotes() {
   const area = document.getElementById('notes-area');
   area.value = localStorage.getItem('nerve_notes') || '';
-  area.addEventListener('input', () => {
-    localStorage.setItem('nerve_notes', area.value);
-  });
+  area.addEventListener('input', () => localStorage.setItem('nerve_notes', area.value));
 }
 
 function initSystem() {
@@ -253,5 +244,4 @@ function initSystem() {
   openWindow('terminal');
 }
 
-// Start sequence
 runBoot();
