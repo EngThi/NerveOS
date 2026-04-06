@@ -1,11 +1,10 @@
 /**
- * NerveOS v0.2.1 - Core System Logic
- * Updates: LocalStorage persistence, Taskbar active states, Terminal theme command.
+ * NerveOS v0.4.0 - Hardware Bridge Update
+ * Features: Web Serial API, Persistence, Canvas Monitoring, Mock FS.
  */
 
 const CONFIG = {
-  BOOT_SPEED: 180,
-  TICK_RATE: 1000,
+  BOOT_SPEED: 120,
   START_TIME: Date.now()
 };
 
@@ -13,38 +12,39 @@ const STATE = {
   topZ: 100,
   drag: null,
   uptime: 0,
+  serialPort: null,
   cpuHistory: new Array(30).fill(0),
   fs: {
     '/': { type: 'dir', content: ['bin', 'usr', 'dev', 'readme.txt'] },
     '/bin': { type: 'dir', content: ['nerve-core', 'panic-auth'] },
     '/dev': { type: 'dir', content: ['oled0', 'serial0', 'encoder0'] },
-    '/readme.txt': { type: 'file', content: 'NerveOS v0.2.1\nPersistence Layer Active.\nAbsolute Cinema Mode: ON' }
+    '/readme.txt': { type: 'file', content: 'NerveOS v0.4.0\nHardware Link: ENABLED\nStatus: Ready for deployment.' }
   },
   currentDir: '/'
 };
 
 // ── BOOT SEQUENCE ──────────────────────────────────
 const BOOT_LINES = [
-  "NerveOS v0.2.1 initializing...",
-  "Loading user preferences...",
-  "Persistence layer: READY",
-  "ESP32-S3 Link: ESTABLISHED",
+  "NerveOS v0.4.0 initializing...",
+  "Loading persistence layer...",
+  "Mounting mock filesystem...",
+  "Web Serial API: DETECTED",
   "System status: NOMINAL",
   "Welcome back, Director."
 ];
 
 async function runBoot() {
   const lineEl = document.getElementById('boot-line');
+  if (!lineEl) return;
   for (const line of BOOT_LINES) {
     lineEl.textContent = line;
     await new Promise(r => setTimeout(r, CONFIG.BOOT_SPEED));
   }
-  
   setTimeout(() => {
     document.getElementById('boot').classList.add('hidden');
     document.getElementById('desktop').classList.remove('hidden');
     initSystem();
-  }, 600);
+  }, 400);
 }
 
 // ── WINDOW MANAGEMENT ─────────────────────────────
@@ -99,31 +99,31 @@ function bringToFront(el) {
 
 // ── TERMINAL ──────────────────────────────────────
 const COMMANDS = {
-  help: () => `Available: help, status, ls, cd, cat, theme [color], clear, uptime, version`,
-  status: () => `MCU: ESP32-S3 | Link: OK | Persistence: Active`,
-  theme: (args) => {
-    if (!args[0]) return "Usage: theme [color-hex]";
-    const color = args[0];
-    document.documentElement.style.setProperty('--accent', color);
-    localStorage.setItem('nerve_accent', color);
-    return `Theme accent updated to ${color}`;
-  },
+  help: () => `Available: help, status, ls, cd, cat, theme, serial, clear, uptime, version`,
+  status: () => `MCU: ESP32-S3 | Link: ${STATE.serialPort ? 'CONNECTED' : 'DISCONNECTED'}`,
   ls: () => STATE.fs[STATE.currentDir].content.join('  '),
   cd: (args) => {
     const target = args[0] === '..' ? '/' : (args[0]?.startsWith('/') ? args[0] : (STATE.currentDir === '/' ? '/' + args[0] : STATE.currentDir + '/' + args[0]));
     if (STATE.fs[target] && STATE.fs[target].type === 'dir') {
       STATE.currentDir = target;
-      return `Dir: ${target}`;
+      return `Switched to ${target}`;
     }
-    return `Error: ${args[0]} not found.`;
+    return `Directory not found.`;
   },
   cat: (args) => {
     const target = args[0]?.startsWith('/') ? args[0] : (STATE.currentDir === '/' ? '/' + args[0] : STATE.currentDir + '/' + args[0]);
-    return STATE.fs[target]?.content || `Error: File not found.`;
+    return STATE.fs[target]?.content || `File not found.`;
   },
+  theme: (args) => {
+    if (!args[0]) return "Usage: theme [color-hex]";
+    document.documentElement.style.setProperty('--accent', args[0]);
+    localStorage.setItem('nerve_accent', args[0]);
+    return `Theme updated.`;
+  },
+  serial: () => STATE.serialPort ? `Linked to Serial. Monitoring data...` : `No link active.`,
   clear: () => { document.getElementById('term-output').innerHTML = ''; return null; },
   uptime: () => `${Math.floor((Date.now() - CONFIG.START_TIME)/1000)}s`,
-  version: () => `NerveOS v0.2.1`
+  version: () => `NerveOS v0.4.0`
 };
 
 function initTerminal() {
@@ -141,7 +141,7 @@ function initTerminal() {
         const res = COMMANDS[cmd](args);
         if (res) printLine(res, 'info');
       } else {
-        printLine(`Command not found: ${cmd}`, 'err');
+        printLine(`Unknown command: ${cmd}`, 'err');
       }
     }
   });
@@ -156,24 +156,15 @@ function initTerminal() {
 }
 
 // ── SYSTEM UTILS ──────────────────────────────────
-function initClock() {
-  const clock = document.getElementById('clock');
-  setInterval(() => {
-    clock.textContent = new Date().toLocaleTimeString('en-GB', { hour12: false });
-  }, 1000);
-}
-
 function initMonitor() {
   const uptimeEl = document.getElementById('stat-uptime');
-  const encEl = document.getElementById('stat-enc');
   const canvas = document.getElementById('cpu-graph');
   const ctx = canvas.getContext('2d');
   
   setInterval(() => {
     STATE.uptime++;
     uptimeEl.textContent = new Date(STATE.uptime * 1000).toISOString().substr(11, 8);
-    encEl.textContent = `${Math.floor(Math.random() * 5)} rpm`;
-    STATE.cpuHistory.push(Math.random() * 60 + 10);
+    STATE.cpuHistory.push(Math.random() * 50 + 10);
     STATE.cpuHistory.shift();
     drawGraph(ctx, STATE.cpuHistory);
   }, 1000);
@@ -181,7 +172,8 @@ function initMonitor() {
 
 function drawGraph(ctx, data) {
   ctx.clearRect(0, 0, 300, 60);
-  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+  ctx.strokeStyle = accent;
   ctx.lineWidth = 2;
   ctx.beginPath();
   const step = 300 / (data.length - 1);
@@ -193,6 +185,28 @@ function drawGraph(ctx, data) {
   ctx.stroke();
 }
 
+async function initSerial() {
+  const btn = document.getElementById('btn-connect');
+  const status = document.getElementById('serial-status');
+  if (!btn) return;
+
+  btn.addEventListener('click', async () => {
+    if (!("serial" in navigator)) return alert("Web Serial not supported.");
+    try {
+      const port = await navigator.serial.requestPort();
+      await port.open({ baudRate: 115200 });
+      STATE.serialPort = port;
+      btn.textContent = "LINKED";
+      btn.classList.add('linked');
+      status.textContent = "CONNECTED @ 115200";
+      status.style.color = "var(--accent)";
+    } catch (err) {
+      status.textContent = "LINK ERROR";
+      status.style.color = "var(--danger)";
+    }
+  });
+}
+
 function initSettings() {
   const wallSelect = document.getElementById('wallpaper-select');
   const desktop = document.getElementById('desktop');
@@ -202,17 +216,15 @@ function initSettings() {
     cyber3: 'url("https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop")'
   };
 
-  // Load Saved Preferences
   const savedAccent = localStorage.getItem('nerve_accent');
   if (savedAccent) document.documentElement.style.setProperty('--accent', savedAccent);
 
-  const savedWallpaper = localStorage.getItem('nerve_wallpaper');
-  if (savedWallpaper) {
-    desktop.style.backgroundImage = wallpapers[savedWallpaper];
-    wallSelect.value = savedWallpaper;
+  const savedWall = localStorage.getItem('nerve_wallpaper');
+  if (savedWall) {
+    desktop.style.backgroundImage = wallpapers[savedWall];
+    wallSelect.value = savedWall;
   }
 
-  // Event Listeners
   document.querySelectorAll('.color-opt').forEach(opt => {
     opt.addEventListener('click', () => {
       const color = opt.dataset.color;
@@ -222,25 +234,17 @@ function initSettings() {
   });
 
   wallSelect.addEventListener('change', (e) => {
-    const val = e.target.value;
-    desktop.style.backgroundImage = wallpapers[val];
-    localStorage.setItem('nerve_wallpaper', val);
+    desktop.style.backgroundImage = wallpapers[e.target.value];
+    localStorage.setItem('nerve_wallpaper', e.target.value);
   });
-}
-
-function initNotes() {
-  const area = document.getElementById('notes-area');
-  area.value = localStorage.getItem('nerve_notes') || '';
-  area.addEventListener('input', () => localStorage.setItem('nerve_notes', area.value));
 }
 
 function initSystem() {
   initWindows();
-  initClock();
   initTerminal();
   initMonitor();
   initSettings();
-  initNotes();
+  initSerial();
   openWindow('terminal');
 }
 
