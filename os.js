@@ -156,14 +156,23 @@ function initTerminal() {
 }
 
 // ── SYSTEM UTILS ──────────────────────────────────
+function initClock() {
+  const clock = document.getElementById('clock');
+  setInterval(() => {
+    clock.textContent = new Date().toLocaleTimeString('en-GB', { hour12: false });
+  }, 1000);
+}
+
 function initMonitor() {
   const uptimeEl = document.getElementById('stat-uptime');
+  const encEl = document.getElementById('stat-enc');
   const canvas = document.getElementById('cpu-graph');
   const ctx = canvas.getContext('2d');
   
   setInterval(() => {
     STATE.uptime++;
     uptimeEl.textContent = new Date(STATE.uptime * 1000).toISOString().substr(11, 8);
+    encEl.textContent = `${Math.floor(Math.random() * 5)} rpm`;
     STATE.cpuHistory.push(Math.random() * 50 + 10);
     STATE.cpuHistory.shift();
     drawGraph(ctx, STATE.cpuHistory);
@@ -180,7 +189,8 @@ function drawGraph(ctx, data) {
   data.forEach((val, i) => {
     const x = i * step;
     const y = 60 - (val / 100 * 60);
-    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
   });
   ctx.stroke();
 }
@@ -241,6 +251,7 @@ function initSettings() {
 
 function initSystem() {
   initWindows();
+  initClock();
   initTerminal();
   initMonitor();
   initSettings();
