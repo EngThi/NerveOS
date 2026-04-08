@@ -134,16 +134,28 @@ body {
   letter-spacing: 1px;
   color: var(--accent);
 }
-.win-close {
+.win-controls { display: flex; gap: 8px; align-items: center; }
+.win-max, .win-close {
   background: transparent;
   border: 0;
   color: var(--muted);
-  font-size: 20px;
+  font-size: 16px;
   cursor: pointer;
   line-height: 1;
+  transition: color 0.2s;
 }
+.win-max:hover { color: var(--accent2); }
 .win-close:hover { color: var(--danger); }
 .win-body { padding: 16px; flex: 1; overflow-y: auto; }
+
+/* State: Maximized */
+.window.maximized {
+  inset: 0 !important;
+  width: 100vw !important;
+  height: calc(100vh - var(--bar-h)) !important;
+  border-radius: 0;
+  z-index: 900 !important;
+}
 
 /* ── TERMINAL ── */
 .terminal-body {

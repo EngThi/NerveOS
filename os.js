@@ -1,6 +1,6 @@
 /**
- * NerveOS v0.4.0 - Hardware Bridge Update
- * Features: Web Serial API, Persistence, Canvas Monitoring, Mock FS.
+ * NerveOS v0.4.1 - Advanced Window Management
+ * Features: Maximize/Restore, Focus on click, Dbl-click to max.
  */
 
 const CONFIG = {
@@ -18,16 +18,16 @@ const STATE = {
     '/': { type: 'dir', content: ['bin', 'usr', 'dev', 'readme.txt'] },
     '/bin': { type: 'dir', content: ['nerve-core', 'panic-auth'] },
     '/dev': { type: 'dir', content: ['oled0', 'serial0', 'encoder0'] },
-    '/readme.txt': { type: 'file', content: 'NerveOS v0.4.0\nHardware Link: ENABLED\nStatus: Ready for deployment.' }
+    '/readme.txt': { type: 'file', content: 'NerveOS v0.4.1\nEnhanced Window Manager: ACTIVE\nClick window to focus.' }
   },
   currentDir: '/'
 };
 
 // ── BOOT SEQUENCE ──────────────────────────────────
 const BOOT_LINES = [
-  "NerveOS v0.4.0 initializing...",
-  "Loading persistence layer...",
-  "Mounting mock filesystem...",
+  "NerveOS v0.4.1 initializing...",
+  "Loading Window Manager plugins...",
+  "Input system: READY",
   "Web Serial API: DETECTED",
   "System status: NOMINAL",
   "Welcome back, Director."
@@ -57,13 +57,30 @@ function initWindows() {
     btn.addEventListener('click', () => closeWindow(btn.dataset.close));
   });
 
+  document.querySelectorAll('[data-max]').forEach(btn => {
+    btn.addEventListener('click', () => toggleMaximize(btn.dataset.max));
+  });
+
+  // Focus on click
+  document.querySelectorAll('.window').forEach(win => {
+    win.addEventListener('mousedown', () => bringToFront(win));
+  });
+
   document.querySelectorAll('.win-bar').forEach(bar => {
     bar.addEventListener('mousedown', (e) => {
       if (e.target.tagName === 'BUTTON') return;
       const win = bar.closest('.window');
+      if (win.classList.contains('maximized')) return;
       bringToFront(win);
       const rect = win.getBoundingClientRect();
       STATE.drag = { win, dx: e.clientX - rect.left, dy: e.clientY - rect.top };
+    });
+
+    bar.addEventListener('dblclick', (e) => {
+      if (e.target.tagName === 'BUTTON') return;
+      const win = bar.closest('.window');
+      const id = win.id.replace('win-', '');
+      toggleMaximize(id);
     });
   });
 
@@ -89,7 +106,17 @@ function closeWindow(id) {
   const win = document.getElementById(`win-${id}`);
   if (win) {
     win.classList.add('hidden');
+    win.classList.remove('maximized');
     document.querySelector(`[data-open="${id}"]`)?.classList.remove('active');
+  }
+}
+
+function toggleMaximize(id) {
+  const win = document.getElementById(`win-${id}`);
+  if (win) {
+    win.classList.toggle('maximized');
+    const btn = win.querySelector('[data-max]');
+    if (btn) btn.textContent = win.classList.contains('maximized') ? '❐' : '◻';
   }
 }
 
@@ -123,7 +150,7 @@ const COMMANDS = {
   serial: () => STATE.serialPort ? `Linked to Serial. Monitoring data...` : `No link active.`,
   clear: () => { document.getElementById('term-output').innerHTML = ''; return null; },
   uptime: () => `${Math.floor((Date.now() - CONFIG.START_TIME)/1000)}s`,
-  version: () => `NerveOS v0.4.0`
+  version: () => `NerveOS v0.4.1`
 };
 
 function initTerminal() {
@@ -156,23 +183,15 @@ function initTerminal() {
 }
 
 // ── SYSTEM UTILS ──────────────────────────────────
-function initClock() {
-  const clock = document.getElementById('clock');
-  setInterval(() => {
-    clock.textContent = new Date().toLocaleTimeString('en-GB', { hour12: false });
-  }, 1000);
-}
-
 function initMonitor() {
   const uptimeEl = document.getElementById('stat-uptime');
-  const encEl = document.getElementById('stat-enc');
   const canvas = document.getElementById('cpu-graph');
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
   
   setInterval(() => {
     STATE.uptime++;
-    uptimeEl.textContent = new Date(STATE.uptime * 1000).toISOString().substr(11, 8);
-    encEl.textContent = `${Math.floor(Math.random() * 5)} rpm`;
+    if (uptimeEl) uptimeEl.textContent = new Date(STATE.uptime * 1000).toISOString().substr(11, 8);
     STATE.cpuHistory.push(Math.random() * 50 + 10);
     STATE.cpuHistory.shift();
     drawGraph(ctx, STATE.cpuHistory);
@@ -189,8 +208,7 @@ function drawGraph(ctx, data) {
   data.forEach((val, i) => {
     const x = i * step;
     const y = 60 - (val / 100 * 60);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   });
   ctx.stroke();
 }
@@ -208,11 +226,15 @@ async function initSerial() {
       STATE.serialPort = port;
       btn.textContent = "LINKED";
       btn.classList.add('linked');
-      status.textContent = "CONNECTED @ 115200";
-      status.style.color = "var(--accent)";
+      if (status) {
+        status.textContent = "CONNECTED @ 115200";
+        status.style.color = "var(--accent)";
+      }
     } catch (err) {
-      status.textContent = "LINK ERROR";
-      status.style.color = "var(--danger)";
+      if (status) {
+        status.textContent = "LINK ERROR";
+        status.style.color = "var(--danger)";
+    }
     }
   });
 }
@@ -230,7 +252,7 @@ function initSettings() {
   if (savedAccent) document.documentElement.style.setProperty('--accent', savedAccent);
 
   const savedWall = localStorage.getItem('nerve_wallpaper');
-  if (savedWall) {
+  if (savedWall && wallSelect) {
     desktop.style.backgroundImage = wallpapers[savedWall];
     wallSelect.value = savedWall;
   }
@@ -243,15 +265,16 @@ function initSettings() {
     });
   });
 
-  wallSelect.addEventListener('change', (e) => {
-    desktop.style.backgroundImage = wallpapers[e.target.value];
-    localStorage.setItem('nerve_wallpaper', e.target.value);
-  });
+  if (wallSelect) {
+    wallSelect.addEventListener('change', (e) => {
+      desktop.style.backgroundImage = wallpapers[e.target.value];
+      localStorage.setItem('nerve_wallpaper', e.target.value);
+    });
+  }
 }
 
 function initSystem() {
   initWindows();
-  initClock();
   initTerminal();
   initMonitor();
   initSettings();
