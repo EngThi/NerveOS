@@ -1,6 +1,6 @@
 /**
- * NerveOS v0.4.1 - Advanced Window Management
- * Features: Maximize/Restore, Focus on click, Dbl-click to max.
+ * NerveOS v0.4.2 - System Notifications
+ * Features: Global notify system, Toast UI, Event hooks.
  */
 
 const CONFIG = {
@@ -18,16 +18,16 @@ const STATE = {
     '/': { type: 'dir', content: ['bin', 'usr', 'dev', 'readme.txt'] },
     '/bin': { type: 'dir', content: ['nerve-core', 'panic-auth'] },
     '/dev': { type: 'dir', content: ['oled0', 'serial0', 'encoder0'] },
-    '/readme.txt': { type: 'file', content: 'NerveOS v0.4.1\nEnhanced Window Manager: ACTIVE\nClick window to focus.' }
+    '/readme.txt': { type: 'file', content: 'NerveOS v0.4.2\nNotifications: ENABLED\nReal-time telemetry ready.' }
   },
   currentDir: '/'
 };
 
 // ── BOOT SEQUENCE ──────────────────────────────────
 const BOOT_LINES = [
-  "NerveOS v0.4.1 initializing...",
+  "NerveOS v0.4.2 initializing...",
   "Loading Window Manager plugins...",
-  "Input system: READY",
+  "Initializing notification service...",
   "Web Serial API: DETECTED",
   "System status: NOMINAL",
   "Welcome back, Director."
@@ -44,6 +44,7 @@ async function runBoot() {
     document.getElementById('boot').classList.add('hidden');
     document.getElementById('desktop').classList.remove('hidden');
     initSystem();
+    notify("NerveOS Session Started");
   }, 400);
 }
 
@@ -124,6 +125,23 @@ function bringToFront(el) {
   el.style.zIndex = ++STATE.topZ;
 }
 
+// ── NOTIFICATIONS ─────────────────────────────────
+function notify(msg, duration = 3000) {
+  const container = document.getElementById('notif-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = 'notif-toast';
+  toast.textContent = msg;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('fade-out');
+    toast.addEventListener('animationend', () => toast.remove());
+  }, duration);
+}
+
 // ── TERMINAL ──────────────────────────────────────
 const COMMANDS = {
   help: () => `Available: help, status, ls, cd, cat, theme, serial, clear, uptime, version`,
@@ -145,12 +163,13 @@ const COMMANDS = {
     if (!args[0]) return "Usage: theme [color-hex]";
     document.documentElement.style.setProperty('--accent', args[0]);
     localStorage.setItem('nerve_accent', args[0]);
+    notify(`Theme: ${args[0]}`);
     return `Theme updated.`;
   },
   serial: () => STATE.serialPort ? `Linked to Serial. Monitoring data...` : `No link active.`,
   clear: () => { document.getElementById('term-output').innerHTML = ''; return null; },
   uptime: () => `${Math.floor((Date.now() - CONFIG.START_TIME)/1000)}s`,
-  version: () => `NerveOS v0.4.1`
+  version: () => `NerveOS v0.4.2`
 };
 
 function initTerminal() {
@@ -226,6 +245,7 @@ async function initSerial() {
       STATE.serialPort = port;
       btn.textContent = "LINKED";
       btn.classList.add('linked');
+      notify("Hardware linked @ 115200bps");
       if (status) {
         status.textContent = "CONNECTED @ 115200";
         status.style.color = "var(--accent)";
@@ -262,6 +282,7 @@ function initSettings() {
       const color = opt.dataset.color;
       document.documentElement.style.setProperty('--accent', color);
       localStorage.setItem('nerve_accent', color);
+      notify("Accent color updated");
     });
   });
 
@@ -269,6 +290,7 @@ function initSettings() {
     wallSelect.addEventListener('change', (e) => {
       desktop.style.backgroundImage = wallpapers[e.target.value];
       localStorage.setItem('nerve_wallpaper', e.target.value);
+      notify("Wallpaper updated");
     });
   }
 }
@@ -279,6 +301,7 @@ function initSystem() {
   initMonitor();
   initSettings();
   initSerial();
+  initNotes();
   openWindow('terminal');
 }
 
