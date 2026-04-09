@@ -1,6 +1,6 @@
 /**
- * NerveOS v0.4.2 - System Notifications
- * Features: Global notify system, Toast UI, Event hooks.
+ * NerveOS v0.4.3 - Terminal Power-Up
+ * Features: Terminal history (arrows), history command, auto-scroll.
  */
 
 const CONFIG = {
@@ -14,20 +14,22 @@ const STATE = {
   uptime: 0,
   serialPort: null,
   cpuHistory: new Array(30).fill(0),
+  termHistory: [],
+  termHistoryIndex: -1,
   fs: {
     '/': { type: 'dir', content: ['bin', 'usr', 'dev', 'readme.txt'] },
     '/bin': { type: 'dir', content: ['nerve-core', 'panic-auth'] },
     '/dev': { type: 'dir', content: ['oled0', 'serial0', 'encoder0'] },
-    '/readme.txt': { type: 'file', content: 'NerveOS v0.4.2\nNotifications: ENABLED\nReal-time telemetry ready.' }
+    '/readme.txt': { type: 'file', content: 'NerveOS v0.4.3\nTerminal: ENHANCED\nAuto-scroll: ON' }
   },
   currentDir: '/'
 };
 
 // ── BOOT SEQUENCE ──────────────────────────────────
 const BOOT_LINES = [
-  "NerveOS v0.4.2 initializing...",
-  "Loading Window Manager plugins...",
-  "Initializing notification service...",
+  "NerveOS v0.4.3 initializing...",
+  "Loading Terminal history service...",
+  "Input system: NOMINAL",
   "Web Serial API: DETECTED",
   "System status: NOMINAL",
   "Welcome back, Director."
@@ -44,7 +46,7 @@ async function runBoot() {
     document.getElementById('boot').classList.add('hidden');
     document.getElementById('desktop').classList.remove('hidden');
     initSystem();
-    notify("NerveOS Session Started");
+    notify("NerveOS Terminal Enhanced");
   }, 400);
 }
 
@@ -62,7 +64,6 @@ function initWindows() {
     btn.addEventListener('click', () => toggleMaximize(btn.dataset.max));
   });
 
-  // Focus on click
   document.querySelectorAll('.window').forEach(win => {
     win.addEventListener('mousedown', () => bringToFront(win));
   });
@@ -129,13 +130,10 @@ function bringToFront(el) {
 function notify(msg, duration = 3000) {
   const container = document.getElementById('notif-container');
   if (!container) return;
-
   const toast = document.createElement('div');
   toast.className = 'notif-toast';
   toast.textContent = msg;
-
   container.appendChild(toast);
-
   setTimeout(() => {
     toast.classList.add('fade-out');
     toast.addEventListener('animationend', () => toast.remove());
@@ -144,8 +142,9 @@ function notify(msg, duration = 3000) {
 
 // ── TERMINAL ──────────────────────────────────────
 const COMMANDS = {
-  help: () => `Available: help, status, ls, cd, cat, theme, serial, clear, uptime, version`,
+  help: () => `Available: help, status, ls, cd, cat, history, theme, serial, clear, uptime, version`,
   status: () => `MCU: ESP32-S3 | Link: ${STATE.serialPort ? 'CONNECTED' : 'DISCONNECTED'}`,
+  history: () => STATE.termHistory.join('\n'),
   ls: () => STATE.fs[STATE.currentDir].content.join('  '),
   cd: (args) => {
     const target = args[0] === '..' ? '/' : (args[0]?.startsWith('/') ? args[0] : (STATE.currentDir === '/' ? '/' + args[0] : STATE.currentDir + '/' + args[0]));
@@ -169,7 +168,7 @@ const COMMANDS = {
   serial: () => STATE.serialPort ? `Linked to Serial. Monitoring data...` : `No link active.`,
   clear: () => { document.getElementById('term-output').innerHTML = ''; return null; },
   uptime: () => `${Math.floor((Date.now() - CONFIG.START_TIME)/1000)}s`,
-  version: () => `NerveOS v0.4.2`
+  version: () => `NerveOS v0.4.3`
 };
 
 function initTerminal() {
@@ -181,6 +180,10 @@ function initTerminal() {
       const val = input.value.trim();
       input.value = '';
       if (!val) return;
+
+      STATE.termHistory.push(val);
+      STATE.termHistoryIndex = STATE.termHistory.length;
+
       printLine(`nerve@os:${STATE.currentDir}$ ${val}`, 'muted');
       const [cmd, ...args] = val.split(' ');
       if (COMMANDS[cmd]) {
@@ -189,6 +192,21 @@ function initTerminal() {
       } else {
         printLine(`Unknown command: ${cmd}`, 'err');
       }
+    } else if (e.key === 'ArrowUp') {
+      if (STATE.termHistoryIndex > 0) {
+        STATE.termHistoryIndex--;
+        input.value = STATE.termHistory[STATE.termHistoryIndex];
+      }
+      e.preventDefault();
+    } else if (e.key === 'ArrowDown') {
+      if (STATE.termHistoryIndex < STATE.termHistory.length - 1) {
+        STATE.termHistoryIndex++;
+        input.value = STATE.termHistory[STATE.termHistoryIndex];
+      } else {
+        STATE.termHistoryIndex = STATE.termHistory.length;
+        input.value = '';
+      }
+      e.preventDefault();
     }
   });
 
@@ -197,7 +215,7 @@ function initTerminal() {
     div.className = `t-line ${cls}`;
     div.textContent = text;
     output.appendChild(div);
-    output.scrollTop = output.scrollHeight;
+    output.scrollTop = output.scrollHeight; // Auto-scroll
   }
 }
 
@@ -236,7 +254,6 @@ async function initSerial() {
   const btn = document.getElementById('btn-connect');
   const status = document.getElementById('serial-status');
   if (!btn) return;
-
   btn.addEventListener('click', async () => {
     if (!("serial" in navigator)) return alert("Web Serial not supported.");
     try {
@@ -254,7 +271,7 @@ async function initSerial() {
       if (status) {
         status.textContent = "LINK ERROR";
         status.style.color = "var(--danger)";
-    }
+      }
     }
   });
 }
@@ -267,16 +284,13 @@ function initSettings() {
     cyber2: 'url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop")',
     cyber3: 'url("https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop")'
   };
-
   const savedAccent = localStorage.getItem('nerve_accent');
   if (savedAccent) document.documentElement.style.setProperty('--accent', savedAccent);
-
   const savedWall = localStorage.getItem('nerve_wallpaper');
   if (savedWall && wallSelect) {
     desktop.style.backgroundImage = wallpapers[savedWall];
     wallSelect.value = savedWall;
   }
-
   document.querySelectorAll('.color-opt').forEach(opt => {
     opt.addEventListener('click', () => {
       const color = opt.dataset.color;
@@ -285,7 +299,6 @@ function initSettings() {
       notify("Accent color updated");
     });
   });
-
   if (wallSelect) {
     wallSelect.addEventListener('change', (e) => {
       desktop.style.backgroundImage = wallpapers[e.target.value];
