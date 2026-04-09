@@ -80,6 +80,16 @@
           </div>
           <button class="task-btn" id="btn-connect" style="margin:0; border-color:var(--accent2); color:var(--accent2)">LINK DEVICE</button>
         </div>
+        
+        <div class="stat-card full">
+          <div class="stat-label">Quick Actions</div>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="task-btn mini-btn" data-macro="clear-oled">Clear OLED</button>
+            <button class="task-btn mini-btn" data-macro="ping-hw">Ping HW</button>
+            <button class="task-btn mini-btn" data-macro="reboot-mcu" style="border-color:var(--danger); color:var(--danger)">Reboot</button>
+          </div>
+        </div>
+
         <div class="stat-card">
           <div class="stat-label">ENCODER</div>
           <div class="stat-val" id="stat-enc">0 rpm</div>

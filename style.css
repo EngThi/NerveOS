@@ -92,6 +92,11 @@ body {
   box-shadow: 0 0 15px rgba(0, 255, 180, 0.2);
   transform: translateY(-2px);
 }
+.task-btn.mini-btn {
+  padding: 4px 10px;
+  font-size: 10px;
+  flex: 1;
+}
 .task-btn.active {
   border-color: var(--accent);
   color: var(--accent);

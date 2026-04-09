@@ -1,6 +1,6 @@
 /**
- * NerveOS v0.4.3 - Terminal Power-Up
- * Features: Terminal history (arrows), history command, auto-scroll.
+ * NerveOS v0.4.4 - Hardware Control & Macros
+ * Features: Serial write support, oled/reboot commands, macro buttons.
  */
 
 const CONFIG = {
@@ -13,23 +13,23 @@ const STATE = {
   drag: null,
   uptime: 0,
   serialPort: null,
-  cpuHistory: new Array(30).fill(0),
+  serialWriter: null,
   termHistory: [],
   termHistoryIndex: -1,
   fs: {
     '/': { type: 'dir', content: ['bin', 'usr', 'dev', 'readme.txt'] },
     '/bin': { type: 'dir', content: ['nerve-core', 'panic-auth'] },
     '/dev': { type: 'dir', content: ['oled0', 'serial0', 'encoder0'] },
-    '/readme.txt': { type: 'file', content: 'NerveOS v0.4.3\nTerminal: ENHANCED\nAuto-scroll: ON' }
+    '/readme.txt': { type: 'file', content: 'NerveOS v0.4.4\nHardware Control: ACTIVE\nWrite Buffer: Ready' }
   },
   currentDir: '/'
 };
 
 // ── BOOT SEQUENCE ──────────────────────────────────
 const BOOT_LINES = [
-  "NerveOS v0.4.3 initializing...",
+  "NerveOS v0.4.4 initializing...",
   "Loading Terminal history service...",
-  "Input system: NOMINAL",
+  "Initializing Hardware Control API...",
   "Web Serial API: DETECTED",
   "System status: NOMINAL",
   "Welcome back, Director."
@@ -46,7 +46,7 @@ async function runBoot() {
     document.getElementById('boot').classList.add('hidden');
     document.getElementById('desktop').classList.remove('hidden');
     initSystem();
-    notify("NerveOS Terminal Enhanced");
+    notify("NerveOS Hardware Control Online");
   }, 400);
 }
 
@@ -142,7 +142,7 @@ function notify(msg, duration = 3000) {
 
 // ── TERMINAL ──────────────────────────────────────
 const COMMANDS = {
-  help: () => `Available: help, status, ls, cd, cat, history, theme, serial, clear, uptime, version`,
+  help: () => `Available: help, status, ls, cd, cat, history, theme, serial, oled [msg], reboot, clear, uptime, version`,
   status: () => `MCU: ESP32-S3 | Link: ${STATE.serialPort ? 'CONNECTED' : 'DISCONNECTED'}`,
   history: () => STATE.termHistory.join('\n'),
   ls: () => STATE.fs[STATE.currentDir].content.join('  '),
@@ -165,10 +165,20 @@ const COMMANDS = {
     notify(`Theme: ${args[0]}`);
     return `Theme updated.`;
   },
+  oled: (args) => {
+    const msg = args.join(' ');
+    if (!msg) return "Usage: oled [message]";
+    sendSerial(`OLED:${msg}`);
+    return `Sending message to hardware...`;
+  },
+  reboot: () => {
+    sendSerial("SYSTEM:REBOOT");
+    return `Hardware reboot signal sent.`;
+  },
   serial: () => STATE.serialPort ? `Linked to Serial. Monitoring data...` : `No link active.`,
   clear: () => { document.getElementById('term-output').innerHTML = ''; return null; },
   uptime: () => `${Math.floor((Date.now() - CONFIG.START_TIME)/1000)}s`,
-  version: () => `NerveOS v0.4.3`
+  version: () => `NerveOS v0.4.4`
 };
 
 function initTerminal() {
@@ -215,8 +225,58 @@ function initTerminal() {
     div.className = `t-line ${cls}`;
     div.textContent = text;
     output.appendChild(div);
-    output.scrollTop = output.scrollHeight; // Auto-scroll
+    output.scrollTop = output.scrollHeight;
   }
+}
+
+// ── HARDWARE CONTROL ──────────────────────────────
+async function sendSerial(data) {
+  if (!STATE.serialWriter) {
+    notify("Error: No hardware linked", 2000);
+    return;
+  }
+  const encoder = new TextEncoder();
+  await STATE.serialWriter.write(encoder.encode(data + "\n"));
+  notify(`CMD Sent: ${data.split(':')[0]}`);
+}
+
+async function initSerial() {
+  const btn = document.getElementById('btn-connect');
+  const status = document.getElementById('serial-status');
+  if (!btn) return;
+
+  btn.addEventListener('click', async () => {
+    if (!("serial" in navigator)) return alert("Web Serial not supported.");
+    try {
+      const port = await navigator.serial.requestPort();
+      await port.open({ baudRate: 115200 });
+      STATE.serialPort = port;
+      STATE.serialWriter = port.writable.getWriter();
+      
+      btn.textContent = "LINKED";
+      btn.classList.add('linked');
+      notify("Hardware linked @ 115200bps");
+      if (status) {
+        status.textContent = "CONNECTED @ 115200";
+        status.style.color = "var(--accent)";
+      }
+    } catch (err) {
+      if (status) {
+        status.textContent = "LINK ERROR";
+        status.style.color = "var(--danger)";
+      }
+    }
+  });
+
+  // Macro buttons
+  document.querySelectorAll('[data-macro]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const macro = btn.dataset.macro;
+      if (macro === 'clear-oled') sendSerial("OLED:CLEAR");
+      if (macro === 'ping-hw') sendSerial("SYSTEM:PING");
+      if (macro === 'reboot-mcu') sendSerial("SYSTEM:REBOOT");
+    });
+  });
 }
 
 // ── SYSTEM UTILS ──────────────────────────────────
@@ -250,32 +310,6 @@ function drawGraph(ctx, data) {
   ctx.stroke();
 }
 
-async function initSerial() {
-  const btn = document.getElementById('btn-connect');
-  const status = document.getElementById('serial-status');
-  if (!btn) return;
-  btn.addEventListener('click', async () => {
-    if (!("serial" in navigator)) return alert("Web Serial not supported.");
-    try {
-      const port = await navigator.serial.requestPort();
-      await port.open({ baudRate: 115200 });
-      STATE.serialPort = port;
-      btn.textContent = "LINKED";
-      btn.classList.add('linked');
-      notify("Hardware linked @ 115200bps");
-      if (status) {
-        status.textContent = "CONNECTED @ 115200";
-        status.style.color = "var(--accent)";
-      }
-    } catch (err) {
-      if (status) {
-        status.textContent = "LINK ERROR";
-        status.style.color = "var(--danger)";
-      }
-    }
-  });
-}
-
 function initSettings() {
   const wallSelect = document.getElementById('wallpaper-select');
   const desktop = document.getElementById('desktop');
@@ -284,13 +318,16 @@ function initSettings() {
     cyber2: 'url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop")',
     cyber3: 'url("https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop")'
   };
+
   const savedAccent = localStorage.getItem('nerve_accent');
   if (savedAccent) document.documentElement.style.setProperty('--accent', savedAccent);
+
   const savedWall = localStorage.getItem('nerve_wallpaper');
-  if (savedWall && wallSelect) {
+  if (savedWall) {
     desktop.style.backgroundImage = wallpapers[savedWall];
-    wallSelect.value = savedWall;
+    if (wallSelect) wallSelect.value = savedWall;
   }
+
   document.querySelectorAll('.color-opt').forEach(opt => {
     opt.addEventListener('click', () => {
       const color = opt.dataset.color;
@@ -299,6 +336,7 @@ function initSettings() {
       notify("Accent color updated");
     });
   });
+
   if (wallSelect) {
     wallSelect.addEventListener('change', (e) => {
       desktop.style.backgroundImage = wallpapers[e.target.value];
@@ -306,6 +344,12 @@ function initSettings() {
       notify("Wallpaper updated");
     });
   }
+}
+
+function initNotes() {
+  const area = document.getElementById('notes-area');
+  area.value = localStorage.getItem('nerve_notes') || '';
+  area.addEventListener('input', () => localStorage.setItem('nerve_notes', area.value));
 }
 
 function initSystem() {
