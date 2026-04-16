@@ -1,6 +1,6 @@
 /**
- * NerveOS v0.4.4 - Hardware Control & Macros
- * Features: Serial write support, oled/reboot commands, macro buttons.
+ * NerveOS v0.6.0 - The Interaction Update
+ * Features: NerveAudio (Synthetic SFX), Terminal Autocomplete, Desktop Shortcuts.
  */
 
 const CONFIG = {
@@ -16,28 +16,78 @@ const STATE = {
   serialWriter: null,
   termHistory: [],
   termHistoryIndex: -1,
+  audioEnabled: true,
   fs: {
     '/': { type: 'dir', content: ['bin', 'usr', 'dev', 'readme.txt'] },
     '/bin': { type: 'dir', content: ['nerve-core', 'panic-auth'] },
     '/dev': { type: 'dir', content: ['oled0', 'serial0', 'encoder0'] },
-    '/readme.txt': { type: 'file', content: 'NerveOS v0.4.4\nHardware Control: ACTIVE\nWrite Buffer: Ready' }
+    '/readme.txt': { type: 'file', content: 'NerveOS v0.6.0\nSynthetic Audio Engine: ONLINE\nReady for Director.' }
   },
   currentDir: '/'
 };
 
+// ── NerveAudio (Synthetic Sound Engine) ───────────
+const NerveAudio = {
+  ctx: null,
+  init() {
+    if (this.ctx) return;
+    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  },
+  play(type) {
+    if (!STATE.audioEnabled || !this.ctx) return;
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    const now = this.ctx.currentTime;
+
+    if (type === 'click') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(100, now + 0.05);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+      osc.start();
+      osc.stop(now + 0.05);
+    } else if (type === 'notif') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+      osc.start();
+      osc.stop(now + 0.2);
+    } else if (type === 'boot') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(50, now);
+      osc.frequency.exponentialRampToValueAtTime(400, now + 1);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 1);
+      osc.start();
+      osc.stop(now + 1);
+    }
+  }
+};
+
 // ── BOOT SEQUENCE ──────────────────────────────────
 const BOOT_LINES = [
-  "NerveOS v0.4.4 initializing...",
-  "Loading Terminal history service...",
-  "Initializing Hardware Control API...",
+  "NerveOS v0.6.0 initializing...",
+  "Warming up NerveAudio engine...",
+  "Loading Terminal v2.0 (Autocomplete ready)...",
   "Web Serial API: DETECTED",
-  "System status: NOMINAL",
+  "System status: ABSOLUTE CINEMA",
   "Welcome back, Director."
 ];
 
 async function runBoot() {
   const lineEl = document.getElementById('boot-line');
   if (!lineEl) return;
+  
+  document.addEventListener('mousedown', () => NerveAudio.init(), { once: true });
+
   for (const line of BOOT_LINES) {
     lineEl.textContent = line;
     await new Promise(r => setTimeout(r, CONFIG.BOOT_SPEED));
@@ -46,22 +96,32 @@ async function runBoot() {
     document.getElementById('boot').classList.add('hidden');
     document.getElementById('desktop').classList.remove('hidden');
     initSystem();
-    notify("NerveOS Hardware Control Online");
+    NerveAudio.play('boot');
+    notify("NerveOS Session Started");
   }, 400);
 }
 
 // ── WINDOW MANAGEMENT ─────────────────────────────
 function initWindows() {
   document.querySelectorAll('[data-open]').forEach(btn => {
-    btn.addEventListener('click', () => openWindow(btn.dataset.open));
+    btn.addEventListener('click', () => {
+      openWindow(btn.dataset.open);
+      NerveAudio.play('click');
+    });
   });
 
   document.querySelectorAll('[data-close]').forEach(btn => {
-    btn.addEventListener('click', () => closeWindow(btn.dataset.close));
+    btn.addEventListener('click', () => {
+      closeWindow(btn.dataset.close);
+      NerveAudio.play('click');
+    });
   });
 
   document.querySelectorAll('[data-max]').forEach(btn => {
-    btn.addEventListener('click', () => toggleMaximize(btn.dataset.max));
+    btn.addEventListener('click', () => {
+      toggleMaximize(btn.dataset.max);
+      NerveAudio.play('click');
+    });
   });
 
   document.querySelectorAll('.window').forEach(win => {
@@ -76,13 +136,6 @@ function initWindows() {
       bringToFront(win);
       const rect = win.getBoundingClientRect();
       STATE.drag = { win, dx: e.clientX - rect.left, dy: e.clientY - rect.top };
-    });
-
-    bar.addEventListener('dblclick', (e) => {
-      if (e.target.tagName === 'BUTTON') return;
-      const win = bar.closest('.window');
-      const id = win.id.replace('win-', '');
-      toggleMaximize(id);
     });
   });
 
@@ -100,7 +153,7 @@ function openWindow(id) {
   if (win) {
     win.classList.remove('hidden');
     bringToFront(win);
-    document.querySelector(`[data-open="${id}"]`)?.classList.add('active');
+    document.querySelectorAll(`[data-open="${id}"]`).forEach(el => el.classList.add('active'));
   }
 }
 
@@ -109,7 +162,7 @@ function closeWindow(id) {
   if (win) {
     win.classList.add('hidden');
     win.classList.remove('maximized');
-    document.querySelector(`[data-open="${id}"]`)?.classList.remove('active');
+    document.querySelectorAll(`[data-open="${id}"]`).forEach(el => el.classList.remove('active'));
   }
 }
 
@@ -134,6 +187,7 @@ function notify(msg, duration = 3000) {
   toast.className = 'notif-toast';
   toast.textContent = msg;
   container.appendChild(toast);
+  NerveAudio.play('notif');
   setTimeout(() => {
     toast.classList.add('fade-out');
     toast.addEventListener('animationend', () => toast.remove());
@@ -142,10 +196,27 @@ function notify(msg, duration = 3000) {
 
 // ── TERMINAL ──────────────────────────────────────
 const COMMANDS = {
-  help: () => `Available: help, status, ls, cd, cat, history, theme, serial, oled [msg], reboot, clear, uptime, version`,
-  status: () => `MCU: ESP32-S3 | Link: ${STATE.serialPort ? 'CONNECTED' : 'DISCONNECTED'}`,
-  history: () => STATE.termHistory.join('\n'),
+  help: () => `Available: help, status, ls, cd, cat, mkdir, touch, history, theme, serial, oled, clear, uptime, version`,
+  status: () => `MCU: ESP32-S3 | Audio: ${STATE.audioEnabled ? 'ON' : 'OFF'} | Bridge: ${STATE.serialPort ? 'LINKED' : 'OFF'}`,
   ls: () => STATE.fs[STATE.currentDir].content.join('  '),
+  mkdir: (args) => {
+    if (!args[0]) return "Usage: mkdir [directory]";
+    const name = args[0];
+    const path = STATE.currentDir === '/' ? `/${name}` : `${STATE.currentDir}/${name}`;
+    if (STATE.fs[path]) return "Error: Path already exists.";
+    STATE.fs[path] = { type: 'dir', content: [] };
+    STATE.fs[STATE.currentDir].content.push(name);
+    return `Created directory: ${name}`;
+  },
+  touch: (args) => {
+    if (!args[0]) return "Usage: touch [filename]";
+    const name = args[0];
+    const path = STATE.currentDir === '/' ? `/${name}` : `${STATE.currentDir}/${name}`;
+    if (STATE.fs[path]) return "Error: Path already exists.";
+    STATE.fs[path] = { type: 'file', content: 'New file created by touch.' };
+    STATE.fs[STATE.currentDir].content.push(name);
+    return `Created file: ${name}`;
+  },
   cd: (args) => {
     const target = args[0] === '..' ? '/' : (args[0]?.startsWith('/') ? args[0] : (STATE.currentDir === '/' ? '/' + args[0] : STATE.currentDir + '/' + args[0]));
     if (STATE.fs[target] && STATE.fs[target].type === 'dir') {
@@ -158,6 +229,7 @@ const COMMANDS = {
     const target = args[0]?.startsWith('/') ? args[0] : (STATE.currentDir === '/' ? '/' + args[0] : STATE.currentDir + '/' + args[0]);
     return STATE.fs[target]?.content || `File not found.`;
   },
+  history: () => STATE.termHistory.join('\n'),
   theme: (args) => {
     if (!args[0]) return "Usage: theme [color-hex]";
     document.documentElement.style.setProperty('--accent', args[0]);
@@ -165,20 +237,11 @@ const COMMANDS = {
     notify(`Theme: ${args[0]}`);
     return `Theme updated.`;
   },
-  oled: (args) => {
-    const msg = args.join(' ');
-    if (!msg) return "Usage: oled [message]";
-    sendSerial(`OLED:${msg}`);
-    return `Sending message to hardware...`;
-  },
-  reboot: () => {
-    sendSerial("SYSTEM:REBOOT");
-    return `Hardware reboot signal sent.`;
-  },
-  serial: () => STATE.serialPort ? `Linked to Serial. Monitoring data...` : `No link active.`,
+  serial: () => STATE.serialPort ? `Linked to Serial.` : `No link active.`,
+  oled: (args) => { sendSerial(`OLED:${args.join(' ')}`); return "Message sent."; },
   clear: () => { document.getElementById('term-output').innerHTML = ''; return null; },
   uptime: () => `${Math.floor((Date.now() - CONFIG.START_TIME)/1000)}s`,
-  version: () => `NerveOS v0.4.4`
+  version: () => `NerveOS v0.6.0`
 };
 
 function initTerminal() {
@@ -190,10 +253,8 @@ function initTerminal() {
       const val = input.value.trim();
       input.value = '';
       if (!val) return;
-
       STATE.termHistory.push(val);
       STATE.termHistoryIndex = STATE.termHistory.length;
-
       printLine(`nerve@os:${STATE.currentDir}$ ${val}`, 'muted');
       const [cmd, ...args] = val.split(' ');
       if (COMMANDS[cmd]) {
@@ -217,6 +278,13 @@ function initTerminal() {
         input.value = '';
       }
       e.preventDefault();
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      const val = input.value.trim();
+      const matches = Object.keys(COMMANDS).filter(c => c.startsWith(val));
+      if (matches.length === 1) {
+        input.value = matches[0];
+      }
     }
   });
 
@@ -229,12 +297,9 @@ function initTerminal() {
   }
 }
 
-// ── HARDWARE CONTROL ──────────────────────────────
+// ── HARDWARE BRIDGE ───────────────────────────────
 async function sendSerial(data) {
-  if (!STATE.serialWriter) {
-    notify("Error: No hardware linked", 2000);
-    return;
-  }
+  if (!STATE.serialWriter) return notify("Error: No hardware linked", 2000);
   const encoder = new TextEncoder();
   await STATE.serialWriter.write(encoder.encode(data + "\n"));
   notify(`CMD Sent: ${data.split(':')[0]}`);
@@ -244,7 +309,6 @@ async function initSerial() {
   const btn = document.getElementById('btn-connect');
   const status = document.getElementById('serial-status');
   if (!btn) return;
-
   btn.addEventListener('click', async () => {
     if (!("serial" in navigator)) return alert("Web Serial not supported.");
     try {
@@ -252,40 +316,80 @@ async function initSerial() {
       await port.open({ baudRate: 115200 });
       STATE.serialPort = port;
       STATE.serialWriter = port.writable.getWriter();
-      
       btn.textContent = "LINKED";
       btn.classList.add('linked');
       notify("Hardware linked @ 115200bps");
       if (status) {
-        status.textContent = "CONNECTED @ 115200";
+        status.textContent = "CONNECTED";
         status.style.color = "var(--accent)";
       }
     } catch (err) {
-      if (status) {
-        status.textContent = "LINK ERROR";
-        status.style.color = "var(--danger)";
-      }
+      if (status) { status.textContent = "LINK ERROR"; status.style.color = "var(--danger)"; }
     }
   });
 
-  // Macro buttons
   document.querySelectorAll('[data-macro]').forEach(btn => {
     btn.addEventListener('click', () => {
       const macro = btn.dataset.macro;
       if (macro === 'clear-oled') sendSerial("OLED:CLEAR");
       if (macro === 'ping-hw') sendSerial("SYSTEM:PING");
       if (macro === 'reboot-mcu') sendSerial("SYSTEM:REBOOT");
+      NerveAudio.play('click');
     });
   });
 }
 
-// ── SYSTEM UTILS ──────────────────────────────────
+// ── SYSTEM SETTINGS & UI ──────────────────────────
+function initSettings() {
+  const wallSelect = document.getElementById('wallpaper-select');
+  const desktop = document.getElementById('desktop');
+  const audioToggle = document.getElementById('audio-toggle');
+  const wallpapers = {
+    cyber1: 'url("https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop")',
+    cyber2: 'url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop")',
+    cyber3: 'url("https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop")'
+  };
+
+  const savedAccent = localStorage.getItem('nerve_accent');
+  if (savedAccent) document.documentElement.style.setProperty('--accent', savedAccent);
+
+  const savedWall = localStorage.getItem('nerve_wallpaper');
+  if (savedWall) { desktop.style.backgroundImage = wallpapers[savedWall]; if (wallSelect) wallSelect.value = savedWall; }
+
+  document.querySelectorAll('.color-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      const color = opt.dataset.color;
+      document.documentElement.style.setProperty('--accent', color);
+      localStorage.setItem('nerve_accent', color);
+      notify("Accent updated");
+      NerveAudio.play('click');
+    });
+  });
+
+  if (wallSelect) {
+    wallSelect.addEventListener('change', (e) => {
+      desktop.style.backgroundImage = wallpapers[e.target.value];
+      localStorage.setItem('nerve_wallpaper', e.target.value);
+      notify("Wallpaper updated");
+      NerveAudio.play('click');
+    });
+  }
+
+  if (audioToggle) {
+    audioToggle.checked = STATE.audioEnabled;
+    audioToggle.addEventListener('change', (e) => { 
+      STATE.audioEnabled = e.target.checked; 
+      notify(STATE.audioEnabled ? "Audio Enabled" : "Audio Muted"); 
+      if (STATE.audioEnabled) NerveAudio.play('click');
+    });
+  }
+}
+
 function initMonitor() {
   const uptimeEl = document.getElementById('stat-uptime');
   const canvas = document.getElementById('cpu-graph');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  
   setInterval(() => {
     STATE.uptime++;
     if (uptimeEl) uptimeEl.textContent = new Date(STATE.uptime * 1000).toISOString().substr(11, 8);
@@ -302,54 +406,17 @@ function drawGraph(ctx, data) {
   ctx.lineWidth = 2;
   ctx.beginPath();
   const step = 300 / (data.length - 1);
-  data.forEach((val, i) => {
-    const x = i * step;
-    const y = 60 - (val / 100 * 60);
-    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-  });
+  data.forEach((val, i) => { const x = i * step; const y = 60 - (val / 100 * 60); i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
   ctx.stroke();
 }
 
-function initSettings() {
-  const wallSelect = document.getElementById('wallpaper-select');
-  const desktop = document.getElementById('desktop');
-  const wallpapers = {
-    cyber1: 'url("https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop")',
-    cyber2: 'url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop")',
-    cyber3: 'url("https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop")'
-  };
-
-  const savedAccent = localStorage.getItem('nerve_accent');
-  if (savedAccent) document.documentElement.style.setProperty('--accent', savedAccent);
-
-  const savedWall = localStorage.getItem('nerve_wallpaper');
-  if (savedWall) {
-    desktop.style.backgroundImage = wallpapers[savedWall];
-    if (wallSelect) wallSelect.value = savedWall;
-  }
-
-  document.querySelectorAll('.color-opt').forEach(opt => {
-    opt.addEventListener('click', () => {
-      const color = opt.dataset.color;
-      document.documentElement.style.setProperty('--accent', color);
-      localStorage.setItem('nerve_accent', color);
-      notify("Accent color updated");
+function initShortcuts() {
+  document.querySelectorAll('.shortcut').forEach(sc => {
+    sc.addEventListener('click', () => { 
+      openWindow(sc.dataset.open); 
+      NerveAudio.play('click'); 
     });
   });
-
-  if (wallSelect) {
-    wallSelect.addEventListener('change', (e) => {
-      desktop.style.backgroundImage = wallpapers[e.target.value];
-      localStorage.setItem('nerve_wallpaper', e.target.value);
-      notify("Wallpaper updated");
-    });
-  }
-}
-
-function initNotes() {
-  const area = document.getElementById('notes-area');
-  area.value = localStorage.getItem('nerve_notes') || '';
-  area.addEventListener('input', () => localStorage.setItem('nerve_notes', area.value));
 }
 
 function initSystem() {
@@ -358,7 +425,11 @@ function initSystem() {
   initMonitor();
   initSettings();
   initSerial();
-  initNotes();
+  initShortcuts();
+  document.getElementById('btn-unlock').addEventListener('click', () => { 
+    document.getElementById('lock-screen').classList.add('hidden');
+    NerveAudio.play('click');
+  });
   openWindow('terminal');
 }
 

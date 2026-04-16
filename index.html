@@ -14,8 +14,33 @@
   </div>
 </div>
 
+<!-- LOCK SCREEN -->
+<div id="lock-screen" class="hidden">
+  <div class="lock-box">
+    <div class="logo" style="font-size:40px; margin-bottom:20px;">⬡</div>
+    <div class="stat-label">SYSTEM LOCKED</div>
+    <button class="task-btn" id="btn-unlock" style="margin-top:20px; width:100%">UNLOCK SESSION</button>
+  </div>
+</div>
+
 <!-- DESKTOP -->
 <div id="desktop" class="hidden">
+
+  <!-- Desktop Icons -->
+  <div id="desktop-shortcuts">
+    <div class="shortcut" data-open="terminal">
+      <div class="shortcut-icon">⌨</div>
+      <div class="shortcut-label">Terminal</div>
+    </div>
+    <div class="shortcut" data-open="monitor">
+      <div class="shortcut-icon">📊</div>
+      <div class="shortcut-label">Monitor</div>
+    </div>
+    <div class="shortcut" data-open="notes">
+      <div class="shortcut-icon">🗒</div>
+      <div class="shortcut-label">Notes</div>
+    </div>
+  </div>
 
   <!-- Taskbar -->
   <div id="taskbar">
@@ -34,7 +59,8 @@
     </div>
   </div>
 
-  <!-- Window: Terminal -->
+  <!-- Windows -->
+  <!-- Terminal -->
   <div class="window hidden" id="win-terminal" style="top:80px;left:60px;width:550px">
     <div class="win-bar">
       <span>⬡ nerve-terminal</span>
@@ -80,7 +106,6 @@
           </div>
           <button class="task-btn" id="btn-connect" style="margin:0; border-color:var(--accent2); color:var(--accent2)">LINK DEVICE</button>
         </div>
-        
         <div class="stat-card full">
           <div class="stat-label">Quick Actions</div>
           <div style="display:flex; gap:8px; margin-top:8px;">
@@ -89,7 +114,6 @@
             <button class="task-btn mini-btn" data-macro="reboot-mcu" style="border-color:var(--danger); color:var(--danger)">Reboot</button>
           </div>
         </div>
-
         <div class="stat-card">
           <div class="stat-label">ENCODER</div>
           <div class="stat-val" id="stat-enc">0 rpm</div>
@@ -121,13 +145,20 @@
           <div class="color-opt" style="background:#ffbe00" data-color="#ffbe00"></div>
         </div>
       </div>
-      <div class="settings-group" style="margin-top:20px">
+      <div class="settings-group" style="margin-top:15px">
         <div class="stat-label">Wallpaper</div>
         <select id="wallpaper-select" class="settings-select">
           <option value="cyber1">Neon Grid</option>
           <option value="cyber2">Deep Space</option>
           <option value="cyber3">Terminal Green</option>
         </select>
+      </div>
+      <div class="settings-group" style="margin-top:15px">
+        <div class="stat-label">Audio System</div>
+        <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+          <input type="checkbox" id="audio-toggle" checked />
+          <span style="font-size:12px;">Enable UI Sounds</span>
+        </div>
       </div>
     </div>
   </div>
@@ -157,12 +188,12 @@
     </div>
     <div class="win-body about-body">
       <div class="about-logo">⬡</div>
-      <div class="about-title">NerveOS v0.4.0</div>
+      <div class="about-title">NerveOS v0.6.0</div>
       <div class="about-sub">The Nerve Cyberdeck Core</div>
       <hr class="about-hr"/>
       <div class="about-row"><span>Hardware</span><span>ESP32-S3 / RP2040</span></div>
-      <div class="about-row"><span>Frontend</span><span>Vanilla JS (Standard compliant)</span></div>
-      <div class="about-row"><span>Status</span><span>Production Ready</span></div>
+      <div class="about-row"><span>Audio</span><span>Synthetic Engine v1.0</span></div>
+      <div class="about-row"><span>Status</span><span>Absolute Cinema</span></div>
       <a class="about-link" href="https://github.com/EngThi/The-Nerve" target="_blank">View Docs →</a>
     </div>
   </div>
