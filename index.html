@@ -55,6 +55,7 @@
       <button class="task-btn" data-open="terminal">Terminal</button>
       <button class="task-btn" data-open="monitor">HW Monitor</button>
       <button class="task-btn" data-open="files">Files</button>
+      <button class="task-btn" data-open="processes">System</button>
       <button class="task-btn" data-open="settings">Settings</button>
       <button class="task-btn" data-open="notes">Notes</button>
       <button class="task-btn" data-open="about">About</button>
@@ -96,6 +97,32 @@
     </div>
   </div>
 
+  <!-- Process Manager -->
+  <div class="window hidden" id="win-processes" style="top:160px;left:400px;width:420px">
+    <div class="win-bar">
+      <span>⬡ process-manager</span>
+      <div class="win-controls">
+        <button class="win-max" data-max="processes">◻</button>
+        <button class="win-close" data-close="processes">×</button>
+      </div>
+    </div>
+    <div class="win-body">
+      <table class="proc-table">
+        <thead>
+          <tr>
+            <th>PROCESS</th>
+            <th>STATUS</th>
+            <th>UPTIME</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="proc-list">
+          <!-- Dinâmico -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- Window: HW Monitor -->
   <div class="window hidden" id="win-monitor" style="top:80px;left:650px;width:340px">
     <div class="win-bar">
@@ -126,6 +153,7 @@
           </div>
           <button class="task-btn" id="btn-connect" style="margin:0; border-color:var(--accent2); color:var(--accent2)">LINK DEVICE</button>
         </div>
+        
         <div class="stat-card full">
           <div class="stat-label">Quick Actions</div>
           <div style="display:flex; gap:8px; margin-top:8px;">
@@ -134,6 +162,7 @@
             <button class="task-btn mini-btn" data-macro="reboot-mcu" style="border-color:var(--danger); color:var(--danger)">Reboot</button>
           </div>
         </div>
+
         <div class="stat-card">
           <div class="stat-label">ENCODER</div>
           <div class="stat-val" id="stat-enc">0 rpm</div>
@@ -208,7 +237,7 @@
     </div>
     <div class="win-body about-body">
       <div class="about-logo">⬡</div>
-      <div class="about-title">NerveOS v0.6.1</div>
+      <div class="about-title">NerveOS v0.6.2</div>
       <div class="about-sub">The Nerve Cyberdeck Core</div>
       <hr class="about-hr"/>
       <div class="about-row"><span>Hardware</span><span>ESP32-S3 / RP2040</span></div>

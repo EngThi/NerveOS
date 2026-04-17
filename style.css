@@ -122,6 +122,43 @@ body {
   max-width: 60px;
 }
 
+/* ── PROCESS TABLE ── */
+.proc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.proc-table th {
+  text-align: left;
+  color: var(--muted);
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  font-size: 9px;
+}
+.proc-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+}
+.proc-status {
+  color: var(--accent);
+  font-weight: bold;
+}
+.proc-kill {
+  background: transparent;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 9px;
+  transition: all 0.2s;
+}
+.proc-kill:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
 .hidden { display: none !important; }
 
 /* ── TASKBAR ── */
