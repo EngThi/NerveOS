@@ -36,6 +36,10 @@
       <div class="shortcut-icon">📊</div>
       <div class="shortcut-label">Monitor</div>
     </div>
+    <div class="shortcut" data-open="files">
+      <div class="shortcut-icon">📁</div>
+      <div class="shortcut-label">Explorer</div>
+    </div>
     <div class="shortcut" data-open="notes">
       <div class="shortcut-icon">🗒</div>
       <div class="shortcut-label">Notes</div>
@@ -50,6 +54,7 @@
     <div id="taskbar-center">
       <button class="task-btn" data-open="terminal">Terminal</button>
       <button class="task-btn" data-open="monitor">HW Monitor</button>
+      <button class="task-btn" data-open="files">Files</button>
       <button class="task-btn" data-open="settings">Settings</button>
       <button class="task-btn" data-open="notes">Notes</button>
       <button class="task-btn" data-open="about">About</button>
@@ -73,6 +78,21 @@
     <div class="terminal-input-row">
       <span class="prompt">nerve@os:~$</span>
       <input id="term-input" autocomplete="off" spellcheck="false" placeholder="type 'help'..." />
+    </div>
+  </div>
+
+  <!-- Explorer -->
+  <div class="window hidden" id="win-files" style="top:120px;left:150px;width:480px">
+    <div class="win-bar">
+      <span>⬡ file-explorer</span>
+      <div class="win-controls">
+        <button class="win-max" data-max="files">◻</button>
+        <button class="win-close" data-close="files">×</button>
+      </div>
+    </div>
+    <div class="win-body">
+      <div id="explorer-path" style="font-size:10px; color:var(--accent); margin-bottom:10px; padding-bottom:5px; border-bottom:1px solid var(--border)">/root</div>
+      <div id="explorer-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap:15px;"></div>
     </div>
   </div>
 
@@ -188,7 +208,7 @@
     </div>
     <div class="win-body about-body">
       <div class="about-logo">⬡</div>
-      <div class="about-title">NerveOS v0.6.0</div>
+      <div class="about-title">NerveOS v0.6.1</div>
       <div class="about-sub">The Nerve Cyberdeck Core</div>
       <hr class="about-hr"/>
       <div class="about-row"><span>Hardware</span><span>ESP32-S3 / RP2040</span></div>

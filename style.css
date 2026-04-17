@@ -96,6 +96,32 @@ body {
   text-align: center;
 }
 
+/* ── EXPLORER ITEMS ── */
+.explorer-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.explorer-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.explorer-icon {
+  font-size: 24px;
+}
+.explorer-item[data-type="dir"] .explorer-icon { color: var(--accent2); }
+.explorer-item[data-type="file"] .explorer-icon { color: var(--text); opacity: 0.8; }
+.explorer-label {
+  font-size: 10px;
+  text-align: center;
+  word-break: break-all;
+  max-width: 60px;
+}
+
 .hidden { display: none !important; }
 
 /* ── TASKBAR ── */
