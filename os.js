@@ -1,9 +1,9 @@
 /**
- * NerveOS v0.6.3 - Visual Polish & Syntax
+ * NerveOS v0.6.5 - Real-time Telemetry & Sound Pro
  */
 
 const CONFIG = {
-  BOOT_SPEED: 80,
+  BOOT_SPEED: 60,
   START_TIME: Date.now()
 };
 
@@ -23,7 +23,7 @@ const STATE = {
     '/': { type: 'dir', content: ['bin', 'usr', 'dev', 'readme.txt'] },
     '/bin': { type: 'dir', content: ['nerve-core', 'panic-auth'] },
     '/dev': { type: 'dir', content: ['oled0', 'serial0', 'encoder0'] },
-    '/readme.txt': { type: 'file', content: 'NerveOS v0.6.3\nAbsolute Cinema Aesthetic: ACTIVE.' }
+    '/readme.txt': { type: 'file', content: 'NerveOS v0.6.5\nMission Control: ACTIVE.' }
   },
   currentDir: '/',
   explorerDir: '/'
@@ -38,15 +38,34 @@ const NerveAudio = {
     const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
     osc.connect(gain); gain.connect(this.ctx.destination);
     const now = this.ctx.currentTime;
-    if (type === 'click') { osc.type = 'square'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.05); gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05); osc.start(); osc.stop(now + 0.05); }
-    else if (type === 'notif') { osc.type = 'sine'; osc.frequency.setValueAtTime(440, now); osc.frequency.exponentialRampToValueAtTime(880, now + 0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2); osc.start(); osc.stop(now + 0.2); }
-    else if (type === 'boot') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(50, now); osc.frequency.exponentialRampToValueAtTime(400, now + 1); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 1); osc.start(); osc.stop(now + 1); }
+    
+    if (type === 'click') { 
+      osc.type = 'square'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.05); 
+      gain.gain.setValueAtTime(0.03, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05); 
+      osc.start(); osc.stop(now + 0.05); 
+    }
+    else if (type === 'notif') { 
+      osc.type = 'sine'; osc.frequency.setValueAtTime(440, now); osc.frequency.exponentialRampToValueAtTime(880, now + 0.1); 
+      gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2); 
+      osc.start(); osc.stop(now + 0.2); 
+    }
+    else if (type === 'boot') { 
+      osc.type = 'sawtooth'; osc.frequency.setValueAtTime(50, now); osc.frequency.exponentialRampToValueAtTime(400, now + 1); 
+      gain.gain.setValueAtTime(0.08, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 1); 
+      osc.start(); osc.stop(now + 1); 
+    }
+    else if (type === 'alert') {
+      osc.type = 'triangle'; osc.frequency.setValueAtTime(1000, now); osc.frequency.setValueAtTime(500, now + 0.1);
+      gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0, now + 0.2);
+      osc.start(); osc.stop(now + 0.2);
+    }
   }
 };
 
 const BOOT_LINES = [
-  "NerveOS v0.6.3 initializing...",
+  "NerveOS v0.6.5 initializing...",
   "Calibrating scanline generators...",
+  "Linking Neural Engine...",
   "System status: ABSOLUTE CINEMA",
   "Ready."
 ];
@@ -58,24 +77,19 @@ async function runBoot() {
     if (lineEl) {
       for (const line of BOOT_LINES) { lineEl.textContent = line; await new Promise(r => setTimeout(r, CONFIG.BOOT_SPEED)); }
     }
-    
     setTimeout(() => {
       const bootScreen = document.getElementById('boot');
       const desktop = document.getElementById('desktop');
       if (bootScreen) bootScreen.classList.add('hidden');
       if (desktop) desktop.classList.remove('hidden');
-      
       initSystem();
       NerveAudio.play('boot');
-      notify("NerveOS v0.6.3 Online");
+      notify("NerveOS v0.6.5 Online");
     }, 400);
   } catch (e) {
     console.error("Boot error:", e);
-    // Force show desktop if boot fails
-    const bootScreen = document.getElementById('boot');
-    if (bootScreen) bootScreen.classList.add('hidden');
-    const desktop = document.getElementById('desktop');
-    if (desktop) desktop.classList.remove('hidden');
+    document.getElementById('boot')?.classList.add('hidden');
+    document.getElementById('desktop')?.classList.remove('hidden');
   }
 }
 
@@ -269,15 +283,139 @@ function initTerminal() {
   }
 }
 
+function handleSerialData(raw) {
+  const line = raw.trim();
+  if (line.startsWith("DATA:")) {
+    const parts = line.replace("DATA:", "").split("|");
+    parts.forEach(p => {
+      const [key, val] = p.split(":");
+      if (key === "CPU") {
+        const load = parseInt(val);
+        STATE.cpuHistory.push(load); STATE.cpuHistory.shift();
+      }
+      if (key === "TEMP") {
+        const tempEl = document.getElementById("stat-status");
+        if (tempEl) {
+          tempEl.textContent = val + "°C";
+          if (parseInt(val) > 75) { tempEl.style.color = "var(--danger)"; NerveAudio.play('alert'); }
+          else { tempEl.style.color = "var(--accent)"; }
+        }
+      }
+      if (key === "ENC") {
+        const encEl = document.getElementById("stat-enc");
+        if (encEl) encEl.textContent = val + " rpm";
+      }
+    });
+  }
+}
+
+async function sendSerial(data) {
+  if (!STATE.serialWriter) return notify("Error: No hardware linked", 2000);
+  const encoder = new TextEncoder(); await STATE.serialWriter.write(encoder.encode(data + "\n"));
+}
+
+async function initSerial() {
+  const btn = document.getElementById('btn-connect'); const status = document.getElementById('serial-status');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    if (!("serial" in navigator)) return alert("Web Serial not supported.");
+    try {
+      const port = await navigator.serial.requestPort(); await port.open({ baudRate: 115200 });
+      STATE.serialPort = port; STATE.serialWriter = port.writable.getWriter();
+      btn.textContent = "LINKED"; btn.classList.add('linked'); notify("Hardware linked");
+      if (status) { status.textContent = "CONNECTED"; status.style.color = "var(--accent)"; }
+      
+      const reader = port.readable.getReader();
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) { reader.releaseLock(); break; }
+        handleSerialData(new TextDecoder().decode(value));
+      }
+    } catch (err) { if (status) { status.textContent = "LINK ERROR"; status.style.color = "var(--danger)"; } }
+  });
+}
+
+function initSettings() {
+  const wallSelect = document.getElementById('wallpaper-select');
+  const desktop = document.getElementById('desktop');
+  const audioToggle = document.getElementById('audio-toggle');
+  const scanlineToggle = document.getElementById('scanline-toggle');
+
+  const wallpapers = {
+    cyber1: 'url("https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop")',
+    cyber2: 'url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop")',
+    cyber3: 'url("https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop")',
+    cinema1: 'url("https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2070&auto=format&fit=crop")',
+    cinema2: 'url("https://images.unsplash.com/photo-1555680202-c86f0e12f086?q=80&w=2070&auto=format&fit=crop")'
+  };
+  
+  const savedAccent = localStorage.getItem('nerve_accent');
+  if (savedAccent) document.documentElement.style.setProperty('--accent', savedAccent);
+  
+  const savedWall = localStorage.getItem('nerve_wallpaper');
+  if (savedWall && wallpapers[savedWall]) {
+    desktop.style.backgroundImage = wallpapers[savedWall];
+    if (wallSelect) wallSelect.value = savedWall;
+  }
+  
+  document.querySelectorAll('.color-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      const color = opt.dataset.color;
+      document.documentElement.style.setProperty('--accent', color);
+      localStorage.setItem('nerve_accent', color);
+      notify(`Theme Updated: ${color}`);
+      NerveAudio.play('click');
+    });
+  });
+
+  if (wallSelect) {
+    wallSelect.addEventListener('change', (e) => {
+      const wall = e.target.value;
+      if (wallpapers[wall]) {
+        desktop.style.backgroundImage = wallpapers[wall];
+        localStorage.setItem('nerve_wallpaper', wall);
+        notify("Interface Visual Updated");
+        NerveAudio.play('click');
+      }
+    });
+  }
+  
+  if (audioToggle) {
+    audioToggle.checked = STATE.audioEnabled;
+    audioToggle.addEventListener('change', (e) => {
+      STATE.audioEnabled = e.target.checked;
+      notify(STATE.audioEnabled ? "Audio Feed: ON" : "Audio Feed: MUTED");
+      if (STATE.audioEnabled) NerveAudio.play('click');
+    });
+  }
+
+  if (scanlineToggle) {
+    scanlineToggle.checked = STATE.scanlines;
+    scanlineToggle.addEventListener('change', (e) => {
+      STATE.scanlines = e.target.checked;
+      const overlay = document.getElementById('crt-overlay');
+      if (overlay) overlay.style.display = STATE.scanlines ? 'block' : 'none';
+      notify(STATE.scanlines ? "CRT Emulation: ACTIVE" : "CRT Emulation: OFF");
+    });
+  }
+}
+
 function initMonitor() {
   const uptimeEl = document.getElementById('stat-uptime');
   const canvas = document.getElementById('cpu-graph');
   setInterval(() => {
     STATE.uptime++; if (uptimeEl) uptimeEl.textContent = new Date(STATE.uptime * 1000).toISOString().substr(11, 8);
-    STATE.cpuHistory.push(Math.random() * 50 + 10); STATE.cpuHistory.shift();
+    
+    // Only randomize if hardware is NOT linked
+    if (!STATE.serialPort) {
+      STATE.cpuHistory.push(Math.random() * 20 + 5); 
+      STATE.cpuHistory.shift();
+    }
+
     if (canvas) {
       const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, 300, 60); ctx.strokeStyle = '#00ffb4'; ctx.lineWidth = 2; ctx.beginPath();
+      ctx.clearRect(0, 0, 300, 60); ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent');
+      ctx.lineWidth = 2; ctx.beginPath();
       const step = 300 / (STATE.cpuHistory.length - 1);
       STATE.cpuHistory.forEach((v, i) => { const x = i * step; const y = 60 - (v / 100 * 60); i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
       ctx.stroke();
@@ -287,7 +425,7 @@ function initMonitor() {
 }
 
 function initSystem() {
-  initWindows(); initTerminal(); initMonitor();
+  initWindows(); initTerminal(); initMonitor(); initSettings(); initSerial();
   const unlockBtn = document.getElementById('btn-unlock');
   if (unlockBtn) unlockBtn.addEventListener('click', () => { document.getElementById('lock-screen').classList.add('hidden'); NerveAudio.play('click'); });
   openWindow('terminal');

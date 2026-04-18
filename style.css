@@ -152,6 +152,36 @@ body {
 .explorer-icon { font-size: 24px; }
 .explorer-label { font-size: 10px; text-align: center; word-break: break-all; max-width: 60px; }
 
+/* ── PROCESS TABLE ── */
+.proc-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.proc-table th { text-align: left; color: var(--muted); padding: 8px; border-bottom: 1px solid var(--border); text-transform: uppercase; font-size: 9px; }
+.proc-table td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.02); }
+.proc-status { color: var(--accent); font-weight: bold; }
+.proc-kill { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 9px; transition: all 0.2s; }
+.proc-kill:hover { background: var(--danger); color: #fff; }
+
+/* ── SETTINGS ── */
+.settings-group { margin-bottom: 20px; }
+.color-grid { display: flex; gap: 10px; margin-top: 10px; }
+.color-opt { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: transform 0.2s, border-color 0.2s; }
+.color-opt:hover { transform: scale(1.1); border-color: #fff; }
+.settings-select { width: 100%; padding: 8px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-family: var(--font); outline: none; margin-top: 10px; cursor: pointer; }
+
+/* ── ABOUT ── */
+.about-body { text-align: center; }
+.about-logo { font-size: 48px; color: var(--accent); margin-bottom: 10px; animation: rotate 10s infinite linear; display: inline-block; }
+@keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.about-title { font-size: 20px; font-weight: 800; color: #fff; }
+.about-hr { border: 0; border-top: 1px solid var(--border); margin: 15px 0; }
+.about-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; }
+.about-row span:last-child { color: var(--accent); }
+.about-link { color: var(--accent2); text-decoration: none; font-size: 12px; font-weight: 700; }
+.about-link:hover { text-decoration: underline; }
+
+/* ── LOCK SCREEN ── */
+#lock-screen { position: fixed; inset: 0; background: rgba(4, 7, 10, 0.95); backdrop-filter: blur(20px); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+.lock-box { text-align: center; padding: 40px; background: var(--panel); border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 0 50px rgba(0,0,0,0.5); width: 300px; }
+
 /* ── MOBILE MISSION CONTROL ─────────────────────── */
 @media (max-width: 768px) {
   .hidden-desktop { display: flex !important; }

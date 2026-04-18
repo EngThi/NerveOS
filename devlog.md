@@ -80,3 +80,15 @@ This session was all about making the OS a real tool for field use. If I'm away 
 
 **Current Status:** v0.6.4 - OPERATIONAL.
 **Next Up:** Real hardware telemetery (killing the Math.random data) and sound library expansion.
+
+### v0.6.5 — REAL-TIME TELEMETRY 📡
+Stop playing with fake data. This session was about opening the veins of the hardware. The NerveOS now listens.
+
+**What was implemented:**
+1.  **The Data Bridge:** Replaced the Math.random() garbage with a real Serial parser. If the ESP32 sends a data packet, the OS displays it instantly.
+2.  **Emergency Protocols:** Added a temperature monitor. If the deck hits 75°C while I'm in the field, the UI goes red and the NerveAudio alert triggers. It's not just an OS; it's a diagnostic station.
+3.  **NerveAudio Pro:** Added a new 'alert' synth tone for critical system states. 
+4.  **UI Sync:** The CPU graph now accurately reflects the hardware load the moment you hit 'LINK'.
+
+**Current Status:** v0.6.5 - MISSION CONTROL ACTIVE. 🚀
+**Next Up:** Persistence layer (IndexedDB) and building the macro library.
