@@ -1,10 +1,9 @@
 /**
- * NerveOS v0.7.0 - The Polish Update
- * Features: CRT Scanlines (Toggle), Active window glow, Stable Core.
+ * NerveOS v0.6.3 - Visual Polish & Syntax
  */
 
 const CONFIG = {
-  BOOT_SPEED: 120,
+  BOOT_SPEED: 80,
   START_TIME: Date.now()
 };
 
@@ -18,18 +17,18 @@ const STATE = {
   termHistoryIndex: -1,
   audioEnabled: true,
   scanlines: true,
+  cpuHistory: new Array(30).fill(0),
   processes: new Map(),
   fs: {
     '/': { type: 'dir', content: ['bin', 'usr', 'dev', 'readme.txt'] },
     '/bin': { type: 'dir', content: ['nerve-core', 'panic-auth'] },
     '/dev': { type: 'dir', content: ['oled0', 'serial0', 'encoder0'] },
-    '/readme.txt': { type: 'file', content: 'NerveOS v0.7.0\nCRT Emulation: ACTIVE\nProduction Candidate.' }
+    '/readme.txt': { type: 'file', content: 'NerveOS v0.6.3\nAbsolute Cinema Aesthetic: ACTIVE.' }
   },
   currentDir: '/',
   explorerDir: '/'
 };
 
-// ── NerveAudio ─────────────────────────────────────
 const NerveAudio = {
   ctx: null,
   init() { if (this.ctx) return; this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
@@ -45,30 +44,41 @@ const NerveAudio = {
   }
 };
 
-// ── BOOT SEQUENCE ──────────────────────────────────
 const BOOT_LINES = [
-  "NerveOS v0.7.0 initializing...",
+  "NerveOS v0.6.3 initializing...",
   "Calibrating scanline generators...",
-  "Initializing CRT emulation kernel...",
-  "Web Serial API: DETECTED",
   "System status: ABSOLUTE CINEMA",
-  "Welcome back, Director."
+  "Ready."
 ];
 
 async function runBoot() {
-  const lineEl = document.getElementById('boot-line'); if (!lineEl) return;
-  document.addEventListener('mousedown', () => NerveAudio.init(), { once: true });
-  for (const line of BOOT_LINES) { lineEl.textContent = line; await new Promise(r => setTimeout(r, CONFIG.BOOT_SPEED)); }
-  setTimeout(() => {
-    document.getElementById('boot').classList.add('hidden');
-    document.getElementById('desktop').classList.remove('hidden');
-    initSystem();
-    NerveAudio.play('boot');
-    notify("NerveOS v0.7.0 Online");
-  }, 400);
+  try {
+    const lineEl = document.getElementById('boot-line');
+    document.addEventListener('mousedown', () => NerveAudio.init(), { once: true });
+    if (lineEl) {
+      for (const line of BOOT_LINES) { lineEl.textContent = line; await new Promise(r => setTimeout(r, CONFIG.BOOT_SPEED)); }
+    }
+    
+    setTimeout(() => {
+      const bootScreen = document.getElementById('boot');
+      const desktop = document.getElementById('desktop');
+      if (bootScreen) bootScreen.classList.add('hidden');
+      if (desktop) desktop.classList.remove('hidden');
+      
+      initSystem();
+      NerveAudio.play('boot');
+      notify("NerveOS v0.6.3 Online");
+    }, 400);
+  } catch (e) {
+    console.error("Boot error:", e);
+    // Force show desktop if boot fails
+    const bootScreen = document.getElementById('boot');
+    if (bootScreen) bootScreen.classList.add('hidden');
+    const desktop = document.getElementById('desktop');
+    if (desktop) desktop.classList.remove('hidden');
+  }
 }
 
-// ── WINDOW MANAGEMENT ─────────────────────────────
 function initWindows() {
   document.querySelectorAll('[data-open]').forEach(btn => {
     btn.addEventListener('click', () => { openWindow(btn.dataset.open); NerveAudio.play('click'); });
@@ -140,38 +150,37 @@ function bringToFront(el) {
   el.classList.add('active-win');
 }
 
-// ── EXPLORER ──────────────────────────────────────
 function renderExplorer() {
   const grid = document.getElementById('explorer-grid'); const pathEl = document.getElementById('explorer-path');
   if (!grid || !pathEl) return;
   grid.innerHTML = ''; pathEl.textContent = STATE.explorerDir;
   if (STATE.explorerDir !== '/') {
-    grid.appendChild(createExplorerItem('..', 'dir', () => {
+    const back = document.createElement('div'); back.className = 'explorer-item';
+    back.innerHTML = `<div class="explorer-icon">📁</div><div class="explorer-label">..</div>`;
+    back.onclick = () => {
       const parts = STATE.explorerDir.split('/').filter(p => p); parts.pop();
       STATE.explorerDir = '/' + parts.join('/'); renderExplorer();
-    }));
+    };
+    grid.appendChild(back);
   }
   const dir = STATE.fs[STATE.explorerDir];
   if (dir && dir.type === 'dir') {
     dir.content.forEach(name => {
       const fullPath = STATE.explorerDir === '/' ? `/${name}` : `${STATE.explorerDir}/${name}`;
-      const type = STATE.fs[fullPath].type;
-      grid.appendChild(createExplorerItem(name, type, () => {
-        if (type === 'dir') { STATE.explorerDir = fullPath; renderExplorer(); }
-        else { openWindow('notes'); document.getElementById('notes-area').value = STATE.fs[fullPath].content; notify(`Opened: ${name}`); }
+      const item = STATE.fs[fullPath];
+      if (!item) return;
+      const div = document.createElement('div'); div.className = 'explorer-item';
+      div.innerHTML = `<div class="explorer-icon">${item.type === 'dir' ? '📁' : '📄'}</div><div class="explorer-label">${name}</div>`;
+      div.onclick = () => {
+        if (item.type === 'dir') { STATE.explorerDir = fullPath; renderExplorer(); }
+        else { openWindow('notes'); document.getElementById('notes-area').value = item.content; notify(`Opened: ${name}`); }
         NerveAudio.play('click');
-      }));
+      };
+      grid.appendChild(div);
     });
   }
 }
 
-function createExplorerItem(name, type, onClick) {
-  const div = document.createElement('div'); div.className = 'explorer-item';
-  div.innerHTML = `<div class="explorer-icon">${type === 'dir' ? '📁' : '📄'}</div><div class="explorer-label">${name}</div>`;
-  div.onclick = onClick; return div;
-}
-
-// ── PROCESS MANAGER ───────────────────────────────
 function renderProcesses() {
   const list = document.getElementById('proc-list'); if (!list) return;
   list.innerHTML = '';
@@ -183,7 +192,6 @@ function renderProcesses() {
   });
 }
 
-// ── NOTIFICATIONS ─────────────────────────────────
 function notify(msg, duration = 3000) {
   const container = document.getElementById('notif-container'); if (!container) return;
   const toast = document.createElement('div'); toast.className = 'notif-toast'; toast.textContent = msg;
@@ -191,50 +199,35 @@ function notify(msg, duration = 3000) {
   setTimeout(() => { toast.classList.add('fade-out'); toast.addEventListener('animationend', () => toast.remove()); }, duration);
 }
 
-// ── TERMINAL v3.0 ──────────────────────────────────
 const COMMANDS = {
-  help: () => `Available: help, status, ps, ls, cd, cat, mkdir, touch, history, theme, serial, oled, panic, lock, clear, uptime, version`,
-  status: () => `MCU: ESP32-S3 | CRT: ${STATE.scanlines ? 'ON' : 'OFF'} | Secure: ARMED`,
+  help: () => `Available: help, status, ps, ls, cd, cat, mkdir, touch, history, clear, uptime`,
+  status: () => `MCU: ESP32-S3 | CRT: ${STATE.scanlines ? 'ON' : 'OFF'}`,
   ps: () => Array.from(STATE.processes.keys()).map(p => `${p.padEnd(10)} RUNNING`).join('\n'),
   ls: () => STATE.fs[STATE.currentDir].content.join('  '),
   mkdir: (args) => {
-    if (!args[0]) return "Usage: mkdir [directory]";
+    if (!args[0]) return "Usage: mkdir [dir]";
     const path = STATE.currentDir === '/' ? `/${args[0]}` : `${STATE.currentDir}/${args[0]}`;
-    if (STATE.fs[path]) return "Error: Exists.";
     STATE.fs[path] = { type: 'dir', content: [] }; STATE.fs[STATE.currentDir].content.push(args[0]);
-    return `Created directory: ${args[0]}`;
+    return `Created ${args[0]}`;
   },
   touch: (args) => {
-    if (!args[0]) return "Usage: touch [filename]";
+    if (!args[0]) return "Usage: touch [file]";
     const path = STATE.currentDir === '/' ? `/${args[0]}` : `${STATE.currentDir}/${args[0]}`;
-    if (STATE.fs[path]) return "Error: Exists.";
-    STATE.fs[path] = { type: 'file', content: 'Empty file.' }; STATE.fs[STATE.currentDir].content.push(args[0]);
-    return `Created file: ${args[0]}`;
+    STATE.fs[path] = { type: 'file', content: '' }; STATE.fs[STATE.currentDir].content.push(args[0]);
+    return `Created ${args[0]}`;
   },
   cd: (args) => {
     const target = args[0] === '..' ? '/' : (args[0]?.startsWith('/') ? args[0] : (STATE.currentDir === '/' ? '/' + args[0] : STATE.currentDir + '/' + args[0]));
     if (STATE.fs[target] && STATE.fs[target].type === 'dir') { STATE.currentDir = target; return `Switched to ${target}`; }
-    return `Directory not found.`;
+    return `Not found.`;
   },
   cat: (args) => {
     const target = args[0]?.startsWith('/') ? args[0] : (STATE.currentDir === '/' ? '/' + args[0] : STATE.currentDir + '/' + args[0]);
-    return STATE.fs[target]?.content || `File not found.`;
+    return STATE.fs[target]?.content || `Not found.`;
   },
   history: () => STATE.termHistory.join('\n'),
-  theme: (args) => { if (!args[0]) return "Usage: theme [color]"; document.documentElement.style.setProperty('--accent', args[0]); localStorage.setItem('nerve_accent', args[0]); notify(`Theme Updated`); return `Color set to ${args[0]}`; },
-  serial: () => STATE.serialPort ? `Linked to Serial.` : `No link active.`,
-  oled: (args) => { sendSerial(`OLED:${args.join(' ')}`); return "Sent."; },
-  lock: () => { toggleLock(true); return "LOCKED."; },
-  panic: () => {
-    document.querySelectorAll('.window').forEach(win => win.classList.add('hidden'));
-    document.querySelectorAll('.task-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById('term-output').innerHTML = '';
-    STATE.processes.clear(); sendSerial("SYSTEM:PANIC"); notify("PANIC PROTOCOL ACTIVATED", 5000);
-    return `Panic mode engaged.`;
-  },
   clear: () => { document.getElementById('term-output').innerHTML = ''; return null; },
-  uptime: () => `${Math.floor((Date.now() - CONFIG.START_TIME)/1000)}s`,
-  version: () => `NerveOS v0.7.0`
+  uptime: () => `${Math.floor((Date.now() - CONFIG.START_TIME)/1000)}s`
 };
 
 function initTerminal() {
@@ -248,9 +241,7 @@ function initTerminal() {
       const [cmd, ...args] = val.split(' ');
       if (COMMANDS[cmd]) { const res = COMMANDS[cmd](args); if (res) printLine(res, 'info'); }
       else { printLine(`Unknown: ${cmd}`, 'err'); }
-    } else if (e.key === 'ArrowUp') { if (STATE.termHistoryIndex > 0) { STATE.termHistoryIndex--; input.value = STATE.termHistory[STATE.termHistoryIndex]; } e.preventDefault(); }
-    else if (e.key === 'ArrowDown') { if (STATE.termHistoryIndex < STATE.termHistory.length - 1) { STATE.termHistoryIndex++; input.value = STATE.termHistory[STATE.termHistoryIndex]; } else { STATE.termHistoryIndex = STATE.termHistory.length; input.value = ''; } e.preventDefault(); }
-    else if (e.key === 'Tab') { e.preventDefault(); const val = input.value.trim(); const matches = Object.keys(COMMANDS).filter(c => c.startsWith(val)); if (matches.length === 1) input.value = matches[0]; }
+    }
   });
 
   function printHighlightedLine(raw) {
@@ -262,11 +253,6 @@ function initTerminal() {
     div.innerHTML = prompt + cmdSpan + argsSpan;
     output.appendChild(div); output.scrollTop = output.scrollHeight;
   }
-    const cmdSpan = `<span class="${COMMANDS[cmd] ? 't-cmd' : 'err'}">${cmd}</span>`;
-    const restSpan = rest ? ` <span class="t-arg">${rest}</span>` : '';
-    div.innerHTML = prompt + cmdSpan + restSpan;
-    output.appendChild(div); output.scrollTop = output.scrollHeight;
-  }
 
   function printLine(text, cls = '') {
     const div = document.createElement('div'); div.className = `t-line ${cls}`; div.textContent = text;
@@ -274,70 +260,27 @@ function initTerminal() {
   }
 }
 
-// ── HARDWARE BRIDGE ───────────────────────────────
-async function sendSerial(data) {
-  if (!STATE.serialWriter) return notify("Error: No hardware linked", 2000);
-  const encoder = new TextEncoder(); await STATE.serialWriter.write(encoder.encode(data + "\n"));
-}
-
-async function initSerial() {
-  const btn = document.getElementById('btn-connect'); const status = document.getElementById('serial-status'); if (!btn) return;
-  btn.addEventListener('click', async () => {
-    if (!("serial" in navigator)) return alert("Web Serial not supported.");
-    try {
-      const port = await navigator.serial.requestPort(); await port.open({ baudRate: 115200 });
-      STATE.serialPort = port; STATE.serialWriter = port.writable.getWriter();
-      btn.textContent = "LINKED"; btn.classList.add('linked'); notify("Hardware linked");
-      if (status) { status.textContent = "CONNECTED"; status.style.color = "var(--accent)"; }
-    } catch (err) { if (status) { status.textContent = "LINK ERROR"; status.style.color = "var(--danger)"; } }
-  });
-  document.querySelectorAll('[data-macro]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const macro = btn.dataset.macro; if (macro === 'clear-oled') sendSerial("OLED:CLEAR"); if (macro === 'ping-hw') sendSerial("SYSTEM:PING"); if (macro === 'reboot-mcu') sendSerial("SYSTEM:REBOOT"); NerveAudio.play('click');
-    });
-  });
-}
-
-// ── SYSTEM UTILS ──────────────────────────────────
-function initSettings() {
-  const wallSelect = document.getElementById('wallpaper-select'); const desktop = document.getElementById('desktop');
-  const audioToggle = document.getElementById('audio-toggle'); const scanlineToggle = document.getElementById('scanline-toggle');
-  const wallpapers = { cyber1: 'url("https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop")', cyber2: 'url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop")', cyber3: 'url("https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop")' };
-  
-  const savedAccent = localStorage.getItem('nerve_accent'); if (savedAccent) document.documentElement.style.setProperty('--accent', savedAccent);
-  const savedWall = localStorage.getItem('nerve_wallpaper'); if (savedWall) { desktop.style.backgroundImage = wallpapers[savedWall]; if (wallSelect) wallSelect.value = savedWall; }
-  
-  document.querySelectorAll('.color-opt').forEach(opt => { opt.addEventListener('click', () => { const color = opt.dataset.color; document.documentElement.style.setProperty('--accent', color); localStorage.setItem('nerve_accent', color); notify("Accent Updated"); NerveAudio.play('click'); }); });
-  if (wallSelect) { wallSelect.addEventListener('change', (e) => { desktop.style.backgroundImage = wallpapers[e.target.value]; localStorage.setItem('nerve_wallpaper', e.target.value); notify("Wallpaper Updated"); NerveAudio.play('click'); }); }
-  
-  if (audioToggle) { audioToggle.checked = STATE.audioEnabled; audioToggle.addEventListener('change', (e) => { STATE.audioEnabled = e.target.checked; notify(STATE.audioEnabled ? "Audio Enabled" : "Audio Muted"); if (STATE.audioEnabled) NerveAudio.play('click'); }); }
-  if (scanlineToggle) { scanlineToggle.checked = STATE.scanlines; scanlineToggle.addEventListener('change', (e) => { STATE.scanlines = e.target.checked; document.getElementById('crt-overlay').classList.toggle('hidden', !STATE.scanlines); notify(STATE.scanlines ? "Scanlines Active" : "Scanlines Disabled"); }); }
-}
-
 function initMonitor() {
-  const uptimeEl = document.getElementById('stat-uptime'); const canvas = document.getElementById('cpu-graph'); if (!canvas) return;
-  const ctx = canvas.getContext('2d');
+  const uptimeEl = document.getElementById('stat-uptime');
+  const canvas = document.getElementById('cpu-graph');
   setInterval(() => {
     STATE.uptime++; if (uptimeEl) uptimeEl.textContent = new Date(STATE.uptime * 1000).toISOString().substr(11, 8);
     STATE.cpuHistory.push(Math.random() * 50 + 10); STATE.cpuHistory.shift();
-    drawGraph(ctx, STATE.cpuHistory);
-    if (!document.getElementById('win-processes').classList.contains('hidden')) renderProcesses();
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 300, 60); ctx.strokeStyle = '#00ffb4'; ctx.lineWidth = 2; ctx.beginPath();
+      const step = 300 / (STATE.cpuHistory.length - 1);
+      STATE.cpuHistory.forEach((v, i) => { const x = i * step; const y = 60 - (v / 100 * 60); i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
+      ctx.stroke();
+    }
+    if (document.getElementById('win-processes') && !document.getElementById('win-processes').classList.contains('hidden')) renderProcesses();
   }, 1000);
 }
 
-function drawGraph(ctx, data) {
-  ctx.clearRect(0, 0, 300, 60); const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-  ctx.strokeStyle = accent; ctx.lineWidth = 2; ctx.beginPath(); const step = 300 / (data.length - 1);
-  data.forEach((val, i) => { const x = i * step; const y = 60 - (val / 100 * 60); i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
-  ctx.stroke();
-}
-
-function initShortcuts() { document.querySelectorAll('.shortcut').forEach(sc => { sc.addEventListener('click', () => { openWindow(sc.dataset.open); NerveAudio.play('click'); }); }); }
-function toggleLock(locked) { STATE.locked = locked; const screen = document.getElementById('lock-screen'); screen.classList.toggle('hidden', !locked); if (locked) notify("Session Locked"); }
-
 function initSystem() {
-  initWindows(); initTerminal(); initMonitor(); initSettings(); initSerial(); initShortcuts();
-  document.getElementById('btn-unlock').addEventListener('click', () => { document.getElementById('lock-screen').classList.add('hidden'); NerveAudio.play('click'); });
+  initWindows(); initTerminal(); initMonitor();
+  const unlockBtn = document.getElementById('btn-unlock');
+  if (unlockBtn) unlockBtn.addEventListener('click', () => { document.getElementById('lock-screen').classList.add('hidden'); NerveAudio.play('click'); });
   openWindow('terminal');
 }
 
