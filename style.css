@@ -300,6 +300,12 @@ body {
 .t-line.err { color: var(--danger); }
 .t-line.info { color: var(--accent2); }
 
+/* Syntax Highlighting Tokens */
+.t-cmd { color: var(--accent); font-weight: bold; }
+.t-arg { color: var(--accent2); }
+.t-path { color: #ffbe00; }
+.t-muted { color: var(--muted); }
+
 /* ── HW MONITOR ── */
 .monitor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
 .stat-card {

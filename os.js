@@ -1,6 +1,6 @@
 /**
- * NerveOS v0.6.2 - The Process Manager Update
- * Features: Real-time process tracking, System app, 'ps' command.
+ * NerveOS v0.6.3 - Terminal v3.0
+ * Features: Syntax Highlighting, Enhanced Command Parsing, UI Polish.
  */
 
 const CONFIG = {
@@ -17,12 +17,12 @@ const STATE = {
   termHistory: [],
   termHistoryIndex: -1,
   audioEnabled: true,
-  processes: new Map(), // { name: startTime }
+  processes: new Map(),
   fs: {
     '/': { type: 'dir', content: ['bin', 'usr', 'dev', 'readme.txt'] },
     '/bin': { type: 'dir', content: ['nerve-core', 'panic-auth'] },
     '/dev': { type: 'dir', content: ['oled0', 'serial0', 'encoder0'] },
-    '/readme.txt': { type: 'file', content: 'NerveOS v0.6.2\nProcess Manager: ACTIVE\nSystem Monitoring: Ready' }
+    '/readme.txt': { type: 'file', content: 'NerveOS v0.6.3\nTerminal v3.0: ACTIVE\nSyntax Highlighting: ENABLED' }
   },
   currentDir: '/',
   explorerDir: '/'
@@ -46,9 +46,9 @@ const NerveAudio = {
 
 // ── BOOT SEQUENCE ──────────────────────────────────
 const BOOT_LINES = [
-  "NerveOS v0.6.2 initializing...",
-  "Mounting File System visualizer...",
-  "Attaching Process Manager...",
+  "NerveOS v0.6.3 initializing...",
+  "Initializing Syntax Highlighting service...",
+  "Terminal v3.0 core: READY",
   "Web Serial API: DETECTED",
   "System status: ABSOLUTE CINEMA",
   "Welcome back, Director."
@@ -63,7 +63,7 @@ async function runBoot() {
     document.getElementById('desktop').classList.remove('hidden');
     initSystem();
     NerveAudio.play('boot');
-    notify("NerveOS Session Started");
+    notify("NerveOS v0.6.3 Online");
   }, 400);
 }
 
@@ -167,18 +167,12 @@ function createExplorerItem(name, type, onClick) {
 
 // ── PROCESS MANAGER ───────────────────────────────
 function renderProcesses() {
-  const list = document.getElementById('proc-list');
-  if (!list) return;
+  const list = document.getElementById('proc-list'); if (!list) return;
   list.innerHTML = '';
   STATE.processes.forEach((startTime, name) => {
     const row = document.createElement('tr');
     const uptime = Math.floor((Date.now() - startTime) / 1000) + 's';
-    row.innerHTML = `
-      <td>${name.toUpperCase()}</td>
-      <td><span class="proc-status">RUNNING</span></td>
-      <td>${uptime}</td>
-      <td><button class="proc-kill" onclick="closeWindow('${name}')">KILL</button></td>
-    `;
+    row.innerHTML = `<td>${name.toUpperCase()}</td><td><span class="proc-status">RUNNING</span></td><td>${uptime}</td><td><button class="proc-kill" onclick="closeWindow('${name}')">KILL</button></td>`;
     list.appendChild(row);
   });
 }
@@ -191,10 +185,10 @@ function notify(msg, duration = 3000) {
   setTimeout(() => { toast.classList.add('fade-out'); toast.addEventListener('animationend', () => toast.remove()); }, duration);
 }
 
-// ── TERMINAL ──────────────────────────────────────
+// ── TERMINAL v3.0 (Syntax Highlighting) ────────────
 const COMMANDS = {
   help: () => `Available: help, status, ps, ls, cd, cat, mkdir, touch, history, theme, serial, oled, panic, lock, clear, uptime, version`,
-  status: () => `MCU: ESP32-S3 | Audio: ${STATE.audioEnabled ? 'ON' : 'OFF'} | Procs: ${STATE.processes.size}`,
+  status: () => `MCU: ESP32-S3 | Link: ${STATE.serialPort ? 'OK' : 'OFF'} | Secure: ARMED`,
   ps: () => Array.from(STATE.processes.keys()).map(p => `${p.padEnd(10)} RUNNING`).join('\n'),
   ls: () => STATE.fs[STATE.currentDir].content.join('  '),
   mkdir: (args) => {
@@ -221,10 +215,10 @@ const COMMANDS = {
     return STATE.fs[target]?.content || `File not found.`;
   },
   history: () => STATE.termHistory.join('\n'),
-  theme: (args) => { if (!args[0]) return "Usage: theme [color]"; document.documentElement.style.setProperty('--accent', args[0]); localStorage.setItem('nerve_accent', args[0]); notify(`Theme: ${args[0]}`); return `Updated.`; },
-  serial: () => STATE.serialPort ? `Linked.` : `No link.`,
-  oled: (args) => { sendSerial(`OLED:${args.join(' ')}`); return "Sent."; },
-  lock: () => { toggleLock(true); return "Locked."; },
+  theme: (args) => { if (!args[0]) return "Usage: theme [color]"; document.documentElement.style.setProperty('--accent', args[0]); localStorage.setItem('nerve_accent', args[0]); notify(`Theme Updated`); return `Color set to ${args[0]}`; },
+  serial: () => STATE.serialPort ? `Linked to Serial.` : `No link active.`,
+  oled: (args) => { sendSerial(`OLED:${args.join(' ')}`); return "CMD Sent."; },
+  lock: () => { toggleLock(true); return "LOCKED."; },
   panic: () => {
     document.querySelectorAll('.window').forEach(win => win.classList.add('hidden'));
     document.querySelectorAll('.task-btn').forEach(btn => btn.classList.remove('active'));
@@ -234,7 +228,7 @@ const COMMANDS = {
   },
   clear: () => { document.getElementById('term-output').innerHTML = ''; return null; },
   uptime: () => `${Math.floor((Date.now() - CONFIG.START_TIME)/1000)}s`,
-  version: () => `NerveOS v0.6.2`
+  version: () => `NerveOS v0.6.3 "Terminal Elite"`
 };
 
 function initTerminal() {
@@ -244,7 +238,7 @@ function initTerminal() {
     if (e.key === 'Enter') {
       const val = input.value.trim(); input.value = ''; if (!val) return;
       STATE.termHistory.push(val); STATE.termHistoryIndex = STATE.termHistory.length;
-      printLine(`nerve@os:${STATE.currentDir}$ ${val}`, 'muted');
+      printHighlightedLine(val);
       const [cmd, ...args] = val.split(' ');
       if (COMMANDS[cmd]) { const res = COMMANDS[cmd](args); if (res) printLine(res, 'info'); }
       else { printLine(`Unknown: ${cmd}`, 'err'); }
@@ -252,14 +246,31 @@ function initTerminal() {
     else if (e.key === 'ArrowDown') { if (STATE.termHistoryIndex < STATE.termHistory.length - 1) { STATE.termHistoryIndex++; input.value = STATE.termHistory[STATE.termHistoryIndex]; } else { STATE.termHistoryIndex = STATE.termHistory.length; input.value = ''; } e.preventDefault(); }
     else if (e.key === 'Tab') { e.preventDefault(); const val = input.value.trim(); const matches = Object.keys(COMMANDS).filter(c => c.startsWith(val)); if (matches.length === 1) input.value = matches[0]; }
   });
-  function printLine(text, cls = '') { const div = document.createElement('div'); div.className = `t-line ${cls}`; div.textContent = text; output.appendChild(div); output.scrollTop = output.scrollHeight; }
+
+  function printHighlightedLine(raw) {
+    const parts = raw.split(' ');
+    const cmd = parts[0];
+    const rest = parts.slice(1).join(' ');
+    const div = document.createElement('div');
+    div.className = 't-line';
+    const prompt = `<span class="t-muted">nerve@os:${STATE.currentDir}$ </span>`;
+    const cmdSpan = `<span class="${COMMANDS[cmd] ? 't-cmd' : 'err'}">${cmd}</span>`;
+    const restSpan = rest ? ` <span class="t-arg">${rest}</span>` : '';
+    div.innerHTML = prompt + cmdSpan + restSpan;
+    output.appendChild(div);
+    output.scrollTop = output.scrollHeight;
+  }
+
+  function printLine(text, cls = '') {
+    const div = document.createElement('div'); div.className = `t-line ${cls}`; div.textContent = text;
+    output.appendChild(div); output.scrollTop = output.scrollHeight;
+  }
 }
 
 // ── HARDWARE BRIDGE ───────────────────────────────
 async function sendSerial(data) {
   if (!STATE.serialWriter) return notify("Error: No hardware linked", 2000);
   const encoder = new TextEncoder(); await STATE.serialWriter.write(encoder.encode(data + "\n"));
-  notify(`CMD Sent: ${data.split(':')[0]}`);
 }
 
 async function initSerial() {
@@ -286,8 +297,8 @@ function initSettings() {
   const wallpapers = { cyber1: 'url("https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop")', cyber2: 'url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop")', cyber3: 'url("https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop")' };
   const savedAccent = localStorage.getItem('nerve_accent'); if (savedAccent) document.documentElement.style.setProperty('--accent', savedAccent);
   const savedWall = localStorage.getItem('nerve_wallpaper'); if (savedWall) { desktop.style.backgroundImage = wallpapers[savedWall]; if (wallSelect) wallSelect.value = savedWall; }
-  document.querySelectorAll('.color-opt').forEach(opt => { opt.addEventListener('click', () => { const color = opt.dataset.color; document.documentElement.style.setProperty('--accent', color); localStorage.setItem('nerve_accent', color); notify("Accent updated"); NerveAudio.play('click'); }); });
-  if (wallSelect) { wallSelect.addEventListener('change', (e) => { desktop.style.backgroundImage = wallpapers[e.target.value]; localStorage.setItem('nerve_wallpaper', e.target.value); notify("Wallpaper updated"); NerveAudio.play('click'); }); }
+  document.querySelectorAll('.color-opt').forEach(opt => { opt.addEventListener('click', () => { const color = opt.dataset.color; document.documentElement.style.setProperty('--accent', color); localStorage.setItem('nerve_accent', color); notify("Accent Updated"); NerveAudio.play('click'); }); });
+  if (wallSelect) { wallSelect.addEventListener('change', (e) => { desktop.style.backgroundImage = wallpapers[e.target.value]; localStorage.setItem('nerve_wallpaper', e.target.value); notify("Wallpaper Updated"); NerveAudio.play('click'); }); }
   if (audioToggle) { audioToggle.checked = STATE.audioEnabled; audioToggle.addEventListener('change', (e) => { STATE.audioEnabled = e.target.checked; notify(STATE.audioEnabled ? "Audio Enabled" : "Audio Muted"); if (STATE.audioEnabled) NerveAudio.play('click'); }); }
 }
 
