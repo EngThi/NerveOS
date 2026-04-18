@@ -79,6 +79,12 @@
       </div>
     </div>
     <div class="win-body terminal-body" id="term-output"></div>
+    <div id="term-quick-cmds" class="hidden-desktop" style="display:flex; gap:5px; padding:5px 16px; background:rgba(0,0,0,0.4); overflow-x:auto;">
+      <button class="task-btn mini-btn" onclick="runTermCmd('help')">help</button>
+      <button class="task-btn mini-btn" onclick="runTermCmd('ls')">ls</button>
+      <button class="task-btn mini-btn" onclick="runTermCmd('status')">status</button>
+      <button class="task-btn mini-btn" onclick="runTermCmd('clear')">clear</button>
+    </div>
     <div class="terminal-input-row">
       <span class="prompt">nerve@os:~$</span>
       <input id="term-input" autocomplete="off" spellcheck="false" placeholder="type 'help'..." />

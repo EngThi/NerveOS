@@ -230,6 +230,15 @@ const COMMANDS = {
   uptime: () => `${Math.floor((Date.now() - CONFIG.START_TIME)/1000)}s`
 };
 
+function runTermCmd(cmd) {
+  const input = document.getElementById("term-input");
+  if (input) {
+    input.value = cmd;
+    const e = new KeyboardEvent("keydown", { key: "Enter" });
+    input.dispatchEvent(e);
+  }
+}
+
 function initTerminal() {
   const input = document.getElementById('term-input'); const output = document.getElementById('term-output');
   if (!input) return;
