@@ -7,6 +7,9 @@
 </head>
 <body>
 
+<!-- CRT SCANLINES OVERLAY -->
+<div id="crt-overlay"></div>
+
 <!-- BOOT SCREEN -->
 <div id="boot">
   <div class="boot-text">
@@ -117,7 +120,6 @@
           </tr>
         </thead>
         <tbody id="proc-list">
-          <!-- Dinâmico -->
         </tbody>
       </table>
     </div>
@@ -153,7 +155,6 @@
           </div>
           <button class="task-btn" id="btn-connect" style="margin:0; border-color:var(--accent2); color:var(--accent2)">LINK DEVICE</button>
         </div>
-        
         <div class="stat-card full">
           <div class="stat-label">Quick Actions</div>
           <div style="display:flex; gap:8px; margin-top:8px;">
@@ -162,7 +163,6 @@
             <button class="task-btn mini-btn" data-macro="reboot-mcu" style="border-color:var(--danger); color:var(--danger)">Reboot</button>
           </div>
         </div>
-
         <div class="stat-card">
           <div class="stat-label">ENCODER</div>
           <div class="stat-val" id="stat-enc">0 rpm</div>
@@ -203,6 +203,13 @@
         </select>
       </div>
       <div class="settings-group" style="margin-top:15px">
+        <div class="stat-label">Display Effects</div>
+        <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+          <input type="checkbox" id="scanline-toggle" checked />
+          <span style="font-size:12px;">Scanlines (CRT)</span>
+        </div>
+      </div>
+      <div class="settings-group" style="margin-top:15px">
         <div class="stat-label">Audio System</div>
         <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
           <input type="checkbox" id="audio-toggle" checked />
@@ -237,12 +244,12 @@
     </div>
     <div class="win-body about-body">
       <div class="about-logo">⬡</div>
-      <div class="about-title">NerveOS v0.6.2</div>
+      <div class="about-title">NerveOS v0.7.0</div>
       <div class="about-sub">The Nerve Cyberdeck Core</div>
       <hr class="about-hr"/>
       <div class="about-row"><span>Hardware</span><span>ESP32-S3 / RP2040</span></div>
-      <div class="about-row"><span>Audio</span><span>Synthetic Engine v1.0</span></div>
-      <div class="about-row"><span>Status</span><span>Absolute Cinema</span></div>
+      <div class="about-row"><span>Visuals</span><span>CRT Simulation Active</span></div>
+      <div class="about-row"><span>Status</span><span>Production Candidate</span></div>
       <a class="about-link" href="https://github.com/EngThi/The-Nerve" target="_blank">View Docs →</a>
     </div>
   </div>

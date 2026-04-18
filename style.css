@@ -1,6 +1,6 @@
 :root {
   --bg:      #04070a;
-  --panel:   rgba(12, 17, 24, 0.85);
+  --panel:   rgba(8, 12, 18, 0.7);
   --border:  rgba(0, 255, 180, 0.2);
   --accent:  #00ffb4;
   --accent2: #00c8ff;
@@ -50,6 +50,24 @@ body {
   background: url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop') center/cover;
 }
 
+/* ── CRT EFFECT ── */
+#crt-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+              linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  background-size: 100% 4px, 3px 100%;
+  z-index: 99999;
+  pointer-events: none;
+  opacity: 0.12;
+  animation: crt-flicker 0.15s infinite;
+}
+@keyframes crt-flicker {
+  0% { opacity: 0.12; }
+  50% { opacity: 0.14; }
+  100% { opacity: 0.16; }
+}
+
 /* ── DESKTOP SHORTCUTS ── */
 #desktop-shortcuts {
   position: absolute;
@@ -75,7 +93,7 @@ body {
   height: 44px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -229,12 +247,18 @@ body {
   position: absolute;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 4px;
   overflow: hidden;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(20px) saturate(180%);
   display: flex;
   flex-direction: column;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.window.active-win {
+  transform: scale(1.005);
+  border-color: var(--accent);
+  box-shadow: 0 0 30px rgba(0, 255, 180, 0.15), 0 20px 50px rgba(0,0,0,0.9);
 }
 .win-bar {
   display: flex;
@@ -274,6 +298,9 @@ body {
 
 /* ── TERMINAL ── */
 .terminal-body {
+  background-image: linear-gradient(rgba(0, 255, 180, 0.03) 1px, transparent 1px); 
+  background-size: 100% 3px; 
+  text-shadow: 0 0 5px rgba(255,255,255,0.1);
   background: rgba(0, 0, 0, 0.4);
   font-size: 12px;
   line-height: 1.6;
@@ -380,3 +407,4 @@ body {
   box-shadow: 0 0 50px rgba(0,0,0,0.5);
   width: 300px;
 }
+.t-line:hover { background: rgba(0, 255, 180, 0.05); cursor: default; }

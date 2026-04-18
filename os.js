@@ -1,6 +1,6 @@
 /**
- * NerveOS v0.6.3 - Terminal v3.0
- * Features: Syntax Highlighting, Enhanced Command Parsing, UI Polish.
+ * NerveOS v0.7.0 - The Polish Update
+ * Features: CRT Scanlines (Toggle), Active window glow, Stable Core.
  */
 
 const CONFIG = {
@@ -17,12 +17,13 @@ const STATE = {
   termHistory: [],
   termHistoryIndex: -1,
   audioEnabled: true,
+  scanlines: true,
   processes: new Map(),
   fs: {
     '/': { type: 'dir', content: ['bin', 'usr', 'dev', 'readme.txt'] },
     '/bin': { type: 'dir', content: ['nerve-core', 'panic-auth'] },
     '/dev': { type: 'dir', content: ['oled0', 'serial0', 'encoder0'] },
-    '/readme.txt': { type: 'file', content: 'NerveOS v0.6.3\nTerminal v3.0: ACTIVE\nSyntax Highlighting: ENABLED' }
+    '/readme.txt': { type: 'file', content: 'NerveOS v0.7.0\nCRT Emulation: ACTIVE\nProduction Candidate.' }
   },
   currentDir: '/',
   explorerDir: '/'
@@ -46,9 +47,9 @@ const NerveAudio = {
 
 // ── BOOT SEQUENCE ──────────────────────────────────
 const BOOT_LINES = [
-  "NerveOS v0.6.3 initializing...",
-  "Initializing Syntax Highlighting service...",
-  "Terminal v3.0 core: READY",
+  "NerveOS v0.7.0 initializing...",
+  "Calibrating scanline generators...",
+  "Initializing CRT emulation kernel...",
   "Web Serial API: DETECTED",
   "System status: ABSOLUTE CINEMA",
   "Welcome back, Director."
@@ -63,7 +64,7 @@ async function runBoot() {
     document.getElementById('desktop').classList.remove('hidden');
     initSystem();
     NerveAudio.play('boot');
-    notify("NerveOS v0.6.3 Online");
+    notify("NerveOS v0.7.0 Online");
   }, 400);
 }
 
@@ -119,6 +120,7 @@ function closeWindow(id) {
   if (win) {
     win.classList.add('hidden');
     win.classList.remove('maximized');
+    win.classList.remove('active-win');
     document.querySelectorAll(`[data-open="${id}"]`).forEach(el => el.classList.remove('active'));
     STATE.processes.delete(id);
   }
@@ -132,7 +134,11 @@ function toggleMaximize(id) {
   }
 }
 
-function bringToFront(el) { el.style.zIndex = ++STATE.topZ; }
+function bringToFront(el) {
+  document.querySelectorAll('.window').forEach(w => w.classList.remove('active-win'));
+  el.style.zIndex = ++STATE.topZ;
+  el.classList.add('active-win');
+}
 
 // ── EXPLORER ──────────────────────────────────────
 function renderExplorer() {
@@ -185,10 +191,10 @@ function notify(msg, duration = 3000) {
   setTimeout(() => { toast.classList.add('fade-out'); toast.addEventListener('animationend', () => toast.remove()); }, duration);
 }
 
-// ── TERMINAL v3.0 (Syntax Highlighting) ────────────
+// ── TERMINAL v3.0 ──────────────────────────────────
 const COMMANDS = {
   help: () => `Available: help, status, ps, ls, cd, cat, mkdir, touch, history, theme, serial, oled, panic, lock, clear, uptime, version`,
-  status: () => `MCU: ESP32-S3 | Link: ${STATE.serialPort ? 'OK' : 'OFF'} | Secure: ARMED`,
+  status: () => `MCU: ESP32-S3 | CRT: ${STATE.scanlines ? 'ON' : 'OFF'} | Secure: ARMED`,
   ps: () => Array.from(STATE.processes.keys()).map(p => `${p.padEnd(10)} RUNNING`).join('\n'),
   ls: () => STATE.fs[STATE.currentDir].content.join('  '),
   mkdir: (args) => {
@@ -217,7 +223,7 @@ const COMMANDS = {
   history: () => STATE.termHistory.join('\n'),
   theme: (args) => { if (!args[0]) return "Usage: theme [color]"; document.documentElement.style.setProperty('--accent', args[0]); localStorage.setItem('nerve_accent', args[0]); notify(`Theme Updated`); return `Color set to ${args[0]}`; },
   serial: () => STATE.serialPort ? `Linked to Serial.` : `No link active.`,
-  oled: (args) => { sendSerial(`OLED:${args.join(' ')}`); return "CMD Sent."; },
+  oled: (args) => { sendSerial(`OLED:${args.join(' ')}`); return "Sent."; },
   lock: () => { toggleLock(true); return "LOCKED."; },
   panic: () => {
     document.querySelectorAll('.window').forEach(win => win.classList.add('hidden'));
@@ -228,7 +234,7 @@ const COMMANDS = {
   },
   clear: () => { document.getElementById('term-output').innerHTML = ''; return null; },
   uptime: () => `${Math.floor((Date.now() - CONFIG.START_TIME)/1000)}s`,
-  version: () => `NerveOS v0.6.3 "Terminal Elite"`
+  version: () => `NerveOS v0.7.0`
 };
 
 function initTerminal() {
@@ -248,17 +254,18 @@ function initTerminal() {
   });
 
   function printHighlightedLine(raw) {
-    const parts = raw.split(' ');
-    const cmd = parts[0];
-    const rest = parts.slice(1).join(' ');
-    const div = document.createElement('div');
-    div.className = 't-line';
+    const parts = raw.split(" "); const cmd = parts[0]; const args = parts.slice(1);
+    const div = document.createElement("div"); div.className = "t-line";
     const prompt = `<span class="t-muted">nerve@os:${STATE.currentDir}$ </span>`;
+    const cmdSpan = `<span class="${COMMANDS[cmd] ? "t-cmd" : "err"}">${cmd}</span>`;
+    const argsSpan = args.map(arg => ` <span class="${arg.startsWith("-") ? "t-arg" : "t-path"}">${arg}</span>`).join("");
+    div.innerHTML = prompt + cmdSpan + argsSpan;
+    output.appendChild(div); output.scrollTop = output.scrollHeight;
+  }
     const cmdSpan = `<span class="${COMMANDS[cmd] ? 't-cmd' : 'err'}">${cmd}</span>`;
     const restSpan = rest ? ` <span class="t-arg">${rest}</span>` : '';
     div.innerHTML = prompt + cmdSpan + restSpan;
-    output.appendChild(div);
-    output.scrollTop = output.scrollHeight;
+    output.appendChild(div); output.scrollTop = output.scrollHeight;
   }
 
   function printLine(text, cls = '') {
@@ -293,13 +300,18 @@ async function initSerial() {
 
 // ── SYSTEM UTILS ──────────────────────────────────
 function initSettings() {
-  const wallSelect = document.getElementById('wallpaper-select'); const desktop = document.getElementById('desktop'); const audioToggle = document.getElementById('audio-toggle');
+  const wallSelect = document.getElementById('wallpaper-select'); const desktop = document.getElementById('desktop');
+  const audioToggle = document.getElementById('audio-toggle'); const scanlineToggle = document.getElementById('scanline-toggle');
   const wallpapers = { cyber1: 'url("https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop")', cyber2: 'url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop")', cyber3: 'url("https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop")' };
+  
   const savedAccent = localStorage.getItem('nerve_accent'); if (savedAccent) document.documentElement.style.setProperty('--accent', savedAccent);
   const savedWall = localStorage.getItem('nerve_wallpaper'); if (savedWall) { desktop.style.backgroundImage = wallpapers[savedWall]; if (wallSelect) wallSelect.value = savedWall; }
+  
   document.querySelectorAll('.color-opt').forEach(opt => { opt.addEventListener('click', () => { const color = opt.dataset.color; document.documentElement.style.setProperty('--accent', color); localStorage.setItem('nerve_accent', color); notify("Accent Updated"); NerveAudio.play('click'); }); });
   if (wallSelect) { wallSelect.addEventListener('change', (e) => { desktop.style.backgroundImage = wallpapers[e.target.value]; localStorage.setItem('nerve_wallpaper', e.target.value); notify("Wallpaper Updated"); NerveAudio.play('click'); }); }
+  
   if (audioToggle) { audioToggle.checked = STATE.audioEnabled; audioToggle.addEventListener('change', (e) => { STATE.audioEnabled = e.target.checked; notify(STATE.audioEnabled ? "Audio Enabled" : "Audio Muted"); if (STATE.audioEnabled) NerveAudio.play('click'); }); }
+  if (scanlineToggle) { scanlineToggle.checked = STATE.scanlines; scanlineToggle.addEventListener('change', (e) => { STATE.scanlines = e.target.checked; document.getElementById('crt-overlay').classList.toggle('hidden', !STATE.scanlines); notify(STATE.scanlines ? "Scanlines Active" : "Scanlines Disabled"); }); }
 }
 
 function initMonitor() {
