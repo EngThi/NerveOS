@@ -291,6 +291,16 @@ function runTermCmd(cmd) {
   if (input) { input.value = cmd; const e = new KeyboardEvent("keydown", { key: "Enter" }); input.dispatchEvent(e); }
 }
 
+function printToTerminal(text, cls = '') {
+  const output = document.getElementById('term-output');
+  if (!output) return;
+  const div = document.createElement('div');
+  div.className = `t-line \${cls}`;
+  div.textContent = text;
+  output.appendChild(div);
+  output.scrollTop = output.scrollHeight;
+}
+
 function initTerminal() {
   const input = document.getElementById('term-input'); const output = document.getElementById('term-output');
   if (!input) return;
@@ -303,29 +313,34 @@ function initTerminal() {
       printHighlightedLine(val);
       const [cmd, ...args] = val.split(' ');
       const cleanCmd = cmd.replace('-', '_');
-      if (COMMANDS[cleanCmd]) { const res = COMMANDS[cleanCmd](args); if (res) printLine(res, 'info'); }
-      else { printLine(`Unknown: ${cmd}`, 'err'); }
+      
+      if (COMMANDS[cleanCmd]) {
+        const res = COMMANDS[cleanCmd](args);
+        if (res) printToTerminal(res, 'info');
+      } else if (STATE.serialWriter) {
+        sendSerial(val).then(() => {
+          printToTerminal(`→ Sent to hardware`, 'serial-out');
+        });
+      } else {
+        printToTerminal(`Unknown: \${cmd} (no hardware linked)`, 'err');
+      }
     }
   });
 
   function printHighlightedLine(raw) {
     const parts = raw.split(" "); const cmd = parts[0]; const args = parts.slice(1);
     const div = document.createElement("div"); div.className = "t-line";
-    const prompt = `<span class="t-muted">nerve@os:${STATE.currentDir}$ </span>`;
-    const cmdSpan = `<span class="${COMMANDS[cmd.replace('-','_')] ? "t-cmd" : "err"}">${cmd}</span>`;
-    const argsSpan = args.map(arg => ` <span class="${arg.startsWith("-") ? "t-arg" : "t-path"}">${arg}</span>`).join("");
+    const prompt = `<span class="t-muted">nerve@os:\${STATE.currentDir}$ </span>`;
+    const cmdSpan = `<span class="\${COMMANDS[cmd.replace('-','_')] ? "t-cmd" : "err"}">\${cmd}</span>`;
+    const argsSpan = args.map(arg => ` <span class="\${arg.startsWith("-") ? "t-arg" : "t-path"}">\${arg}</span>`).join("");
     div.innerHTML = prompt + cmdSpan + argsSpan;
-    output.appendChild(div); output.scrollTop = output.scrollHeight;
-  }
-
-  function printLine(text, cls = '') {
-    const div = document.createElement('div'); div.className = `t-line ${cls}`; div.textContent = text;
     output.appendChild(div); output.scrollTop = output.scrollHeight;
   }
 }
 
 function handleSerialData(raw) {
   const line = raw.trim();
+  if (!line) return;
   if (line.startsWith("DATA:")) {
     const parts = line.replace("DATA:", "").split("|");
     parts.forEach(p => {
@@ -342,6 +357,7 @@ function handleSerialData(raw) {
       if (key === "ENC") { const encEl = document.getElementById("stat-enc"); if (encEl) encEl.textContent = val + " rpm"; }
     });
   }
+  printToTerminal(`← \${line}`, 'serial-in');
 }
 
 async function sendSerial(data) {
@@ -352,15 +368,34 @@ async function sendSerial(data) {
 async function initSerial() {
   const btn = document.getElementById('btn-connect'); const status = document.getElementById('serial-status'); if (!btn) return;
   btn.addEventListener('click', async () => {
-    if (!("serial" in navigator)) return alert("Web Serial API support required.");
+    if (!('serial' in navigator)) { return notify('⚠ Web Serial API requer Chrome/Edge'); }
     try {
-      const port = await navigator.serial.requestPort(); await port.open({ baudRate: 115200 });
+      const port = await navigator.serial.requestPort();
+      await port.open({ baudRate: parseInt(localStorage.getItem('nerve_baud') || '115200') });
       STATE.serialPort = port; STATE.serialWriter = port.writable.getWriter();
-      btn.textContent = "LINKED"; btn.classList.add('linked'); notify("Hardware linked");
-      if (status) { status.textContent = "CONNECTED"; status.style.color = "var(--accent)"; }
+      btn.textContent = 'LINKED'; btn.classList.add('linked'); notify('🔗 Hardware Vinculado');
+      if (status) { status.textContent = 'CONNECTED'; status.style.color = 'var(--accent)'; }
+      
       const reader = port.readable.getReader();
-      while (true) { const { value, done } = await reader.read(); if (done) { reader.releaseLock(); break; } handleSerialData(new TextDecoder().decode(value)); }
-    } catch (err) { if (status) { status.textContent = "LINK ERROR"; status.style.color = "var(--danger)"; } }
+      let buffer = '';
+      (async () => {
+        try {
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) { reader.releaseLock(); break; }
+            buffer += new TextDecoder().decode(value);
+            const lines = buffer.split('\n'); buffer = lines.pop();
+            lines.forEach(line => handleSerialData(line));
+          }
+        } catch (e) {
+          notify('⚠ Serial desconectado');
+          if (status) { status.textContent = 'DISCONNECTED'; status.style.color = 'var(--danger)'; }
+        }
+      })();
+    } catch (err) {
+      notify('⚠ Falha: ' + err.message);
+      if (status) { status.textContent = 'LINK ERROR'; status.style.color = 'var(--danger)'; }
+    }
   });
 }
 
