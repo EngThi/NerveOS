@@ -1,18 +1,37 @@
 /**
- * NerveOS v0.6.6 - Persistence & Macro Manager
+ * NerveOS v0.6.7 — THE SHIP
+ * Final polish and Field Guide integration.
  */
 
 const CONFIG = {
-  BOOT_SPEED: 60,
+  BOOT_SPEED: 50,
   START_TIME: Date.now()
 };
 
+const MANUAL_CONTENT = `── NERVE-OS FIELD GUIDE ──
+
+1. HARDWARE BRIDGE:
+Use the 'Link Device' button to connect your ESP32-S3 via Serial (115200 baud).
+
+2. TELEMETRY:
+Monitor CPU and Temp in real-time. High temps (>75°C) trigger 'NerveAudio Alert'.
+
+3. PERSISTENCE:
+Files in /notes are auto-saved to your browser. Use 'reset-fs' to wipe memory.
+
+4. AUTOMATION:
+The Macro Manager app allows one-tap execution of complex hardware scripts.
+
+SYSTEM STATUS: PRODUCTION READY
+DIRECTOR ACCESS: GRANTED`;
+
 const DEFAULT_FS = {
-  '/': { type: 'dir', content: ['bin', 'usr', 'dev', 'notes', 'readme.txt'] },
+  '/': { type: 'dir', content: ['bin', 'usr', 'dev', 'notes', 'manual.txt', 'readme.txt'] },
   '/bin': { type: 'dir', content: ['nerve-core', 'panic-auth'] },
   '/dev': { type: 'dir', content: ['oled0', 'serial0', 'encoder0'] },
   '/notes': { type: 'dir', content: [] },
-  '/readme.txt': { type: 'file', content: 'NerveOS v0.6.6\nPersistence: ENABLED\nMacro Manager: ONLINE.' }
+  '/manual.txt': { type: 'file', content: MANUAL_CONTENT },
+  '/readme.txt': { type: 'file', content: 'NerveOS v0.6.7\nAbsolute Cinema Aesthetic: ACTIVE.\nField Operations: READY.' }
 };
 
 const STATE = {
@@ -46,19 +65,35 @@ const NerveAudio = {
     const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
     osc.connect(gain); gain.connect(this.ctx.destination);
     const now = this.ctx.currentTime;
-    if (type === 'click') { osc.type = 'square'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.05); gain.gain.setValueAtTime(0.03, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05); osc.start(); osc.stop(now + 0.05); }
-    else if (type === 'notif') { osc.type = 'sine'; osc.frequency.setValueAtTime(440, now); osc.frequency.exponentialRampToValueAtTime(880, now + 0.1); gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2); osc.start(); osc.stop(now + 0.2); }
-    else if (type === 'boot') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(50, now); osc.frequency.exponentialRampToValueAtTime(400, now + 1); gain.gain.setValueAtTime(0.08, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 1); osc.start(); osc.stop(now + 1); }
-    else if (type === 'alert') { osc.type = 'triangle'; osc.frequency.setValueAtTime(1000, now); osc.frequency.setValueAtTime(500, now + 0.1); gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0, now + 0.2); osc.start(); osc.stop(now + 0.2); }
+    if (type === 'click') { 
+      osc.type = 'square'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.05); 
+      gain.gain.setValueAtTime(0.02, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05); 
+      osc.start(); osc.stop(now + 0.05); 
+    }
+    else if (type === 'notif') { 
+      osc.type = 'sine'; osc.frequency.setValueAtTime(440, now); osc.frequency.exponentialRampToValueAtTime(880, now + 0.1); 
+      gain.gain.setValueAtTime(0.04, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2); 
+      osc.start(); osc.stop(now + 0.2); 
+    }
+    else if (type === 'boot') { 
+      osc.type = 'sawtooth'; osc.frequency.setValueAtTime(40, now); osc.frequency.exponentialRampToValueAtTime(300, now + 0.8); 
+      gain.gain.setValueAtTime(0.06, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8); 
+      osc.start(); osc.stop(now + 0.8); 
+    }
+    else if (type === 'alert') {
+      osc.type = 'triangle'; osc.frequency.setValueAtTime(800, now); osc.frequency.setValueAtTime(400, now + 0.1);
+      gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0, now + 0.2);
+      osc.start(); osc.stop(now + 0.2);
+    }
   }
 };
 
 const BOOT_LINES = [
-  "NerveOS v0.6.6 initializing...",
-  "Loading persistent storage...",
-  "Calibrating scanline generators...",
+  "NerveOS v0.6.7 initializing...",
+  "Loading Director's Workspace...",
+  "Calibrating neural interface...",
   "System status: ABSOLUTE CINEMA",
-  "Ready."
+  "Welcome back, Director."
 ];
 
 async function runBoot() {
@@ -73,7 +108,7 @@ async function runBoot() {
       document.getElementById('desktop')?.classList.remove('hidden');
       initSystem();
       NerveAudio.play('boot');
-      notify("NerveOS v0.6.6 Online");
+      notify("NerveOS v0.6.7 — OPERATIONAL");
     }, 400);
   } catch (e) {
     document.getElementById('boot')?.classList.add('hidden');
@@ -119,6 +154,8 @@ function openWindow(id) {
   const win = document.getElementById(`win-${id}`);
   if (win) {
     win.classList.remove('hidden');
+    // Minimal delay to allow CSS transition to trigger
+    setTimeout(() => win.classList.add('win-visible'), 10);
     bringToFront(win);
     document.querySelectorAll(`[data-open="${id}"]`).forEach(el => el.classList.add('active'));
     STATE.processes.set(id, Date.now());
@@ -130,9 +167,12 @@ function openWindow(id) {
 function closeWindow(id) {
   const win = document.getElementById(`win-${id}`);
   if (win) {
-    win.classList.add('hidden');
-    win.classList.remove('maximized');
-    win.classList.remove('active-win');
+    win.classList.remove('win-visible');
+    setTimeout(() => {
+        win.classList.add('hidden');
+        win.classList.remove('maximized');
+        win.classList.remove('active-win');
+    }, 200);
     document.querySelectorAll(`[data-open="${id}"]`).forEach(el => el.classList.remove('active'));
     STATE.processes.delete(id);
   }
@@ -207,8 +247,8 @@ function notify(msg, duration = 3000) {
 }
 
 const COMMANDS = {
-  help: () => `Available: help, status, ps, ls, cd, cat, mkdir, touch, history, clear, uptime, reset-fs`,
-  status: () => `MCU: ESP32-S3 | CRT: ${STATE.scanlines ? 'ON' : 'OFF'}`,
+  help: () => `Available: help, status, ps, ls, cd, cat, mkdir, touch, history, clear, uptime, reset-fs, panic, version`,
+  status: () => `MCU: ESP32-S3 | CRT: ${STATE.scanlines ? 'ON' : 'OFF'} | Secure: ARMED`,
   ps: () => Array.from(STATE.processes.keys()).map(p => `${p.padEnd(10)} RUNNING`).join('\n'),
   ls: () => STATE.fs[STATE.currentDir].content.join('  '),
   mkdir: (args) => {
@@ -236,8 +276,14 @@ const COMMANDS = {
   },
   history: () => STATE.termHistory.join('\n'),
   reset_fs: () => { localStorage.removeItem('nerve_fs'); location.reload(); return "Resetting..."; },
+  panic: () => { 
+    document.querySelectorAll('.window').forEach(win => closeWindow(win.id.replace('win-', '')));
+    sendSerial("SYSTEM:PANIC"); notify("PANIC PROTOCOL ENGAGED", 5000);
+    return "Panic mode: ACTIVE.";
+  },
   clear: () => { document.getElementById('term-output').innerHTML = ''; return null; },
-  uptime: () => `${Math.floor((Date.now() - CONFIG.START_TIME)/1000)}s`
+  uptime: () => `${Math.floor((Date.now() - CONFIG.START_TIME)/1000)}s`,
+  version: () => `NerveOS v0.6.7 — THE SHIP`
 };
 
 function runTermCmd(cmd) {
@@ -361,8 +407,14 @@ function initNotes() {
   }
 }
 
+function initShortcuts() { 
+    document.querySelectorAll('.shortcut').forEach(sc => { 
+        sc.addEventListener('click', () => { openWindow(sc.dataset.open); NerveAudio.play('click'); }); 
+    }); 
+}
+
 function initSystem() {
-  initWindows(); initTerminal(); initMonitor(); initSettings(); initSerial(); initNotes();
+  initWindows(); initTerminal(); initMonitor(); initSettings(); initSerial(); initNotes(); initShortcuts();
   const unlockBtn = document.getElementById('btn-unlock');
   if (unlockBtn) unlockBtn.addEventListener('click', () => { document.getElementById('lock-screen').classList.add('hidden'); NerveAudio.play('click'); });
   openWindow('terminal');
