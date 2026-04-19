@@ -92,3 +92,38 @@ Stop playing with fake data. This session was about opening the veins of the har
 
 **Current Status:** v0.6.5 - MISSION CONTROL ACTIVE. 🚀
 **Next Up:** Persistence layer (IndexedDB) and building the macro library.
+
+### v0.6.6 — PERSISTENCE & MACROS 🧠
+The NerveOS now has a memory. It's no longer just a session; it's a permanent workstation.
+
+**What was implemented:**
+1.  **Virtual FS Persistence:** Every folder you create with `mkdir` and every file you `touch` is now saved to the browser's storage. You can refresh, close the tab, or reboot—your data stays. 💾
+2.  **Notes Auto-Sync:** The Notes app is now fully integrated with the FS. Anything you type is saved in real-time to the virtual disk.
+3.  **Macro Manager:** Built a new app dedicated to hardware automation. One-tap scripts for WiFi scanning, OLED testing, and MCU reboots. It’s about making complex tasks fast.
+4.  **Terminal History:** Command history (up/down arrows) now persists between sessions. No more re-typing long serial commands.
+
+**Current Status:** v0.6.6 - PRODUCTION READY candidate.
+**Next Up:** The FINAL SHIP. UX cleanup, transitions, and the "Manual do Diretor". 🚀
+
+### v0.6.7 — THE SHIP 🎬🚀
+The Gran Finale. The NerveOS is no longer a project; it's a production-ready environment.
+
+**What was implemented:**
+1.  **Manual do Diretor (Field Guide):** Injected an official guide (`manual.txt`) into the system. New users now have a clear path to master the deck from the second they boot up.
+2.  **UX Motion System:** Rewrote the window engine to support scale and opacity transitions. Windows now "breath" into existence with a subtle zoom effect. It feels premium.
+3.  **Boot Optimization:** Tightened the boot sequence timing for a snappier start while maintaining the CRT calibration vibe.
+4.  **Final Polish:** Updated all version strings and system statuses to v0.6.7 — THE SHIP.
+
+**Current Status:** v0.6.7 - OPERATIONAL & SHIPPED. 💎
+**Next Up:** Community review and field testing.
+
+### v0.6.8 — THE SERIAL DIALOGUE 📡
+The terminal is no longer a sandbox. It’s a live wire.
+
+**What was implemented:**
+1.  **Bidirectional Serial:** The terminal now prints everything the ESP32 sends back. It feels like a real Linux console now. Green text for incoming data, yellow italics for outgoing.
+2.  **Visual Feedback:** Added specific styles for serial traffic so I can distinguish between internal OS commands and raw hardware chatter. 
+3.  **Smart Buffering:** Improved the serial reader logic to handle fragmented data packets without breaking the UI.
+
+**Current Status:** v0.6.8 - COMMUNICATION ESTABLISHED.
+**Next Up:** Dynamic Macro Builder (moving away from hardcoded buttons). 🛠️
