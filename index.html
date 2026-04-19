@@ -59,6 +59,7 @@
       <button class="task-btn" data-open="monitor">HW Monitor</button>
       <button class="task-btn" data-open="files">Files</button>
       <button class="task-btn" data-open="processes">System</button>
+      <button class="task-btn" data-open="macros">Macros</button>
       <button class="task-btn" data-open="settings">Settings</button>
       <button class="task-btn" data-open="notes">Notes</button>
       <button class="task-btn" data-open="about">About</button>
@@ -128,6 +129,29 @@
         <tbody id="proc-list">
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- Window: Macros -->
+  <div class="window hidden" id="win-macros" style="top:200px;left:300px;width:380px">
+    <div class="win-bar">
+      <span>⬡ macro-manager</span>
+      <div class="win-controls">
+        <button class="win-max" data-max="macros">◻</button>
+        <button class="win-close" data-close="macros">×</button>
+      </div>
+    </div>
+    <div class="win-body">
+      <div class="stat-label" style="margin-bottom:15px;">Hardware Automation Library</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <button class="task-btn" onclick="sendSerial('SCAN:WIFI')">Scan WiFi</button>
+        <button class="task-btn" onclick="sendSerial('OLED:PATTERN:01')">Test OLED</button>
+        <button class="task-btn" onclick="sendSerial('SYS:GET:LOGS')">Fetch Logs</button>
+        <button class="task-btn" onclick="sendSerial('LED:BLINK:SOS')">Signal Alert</button>
+        <button class="task-btn" style="border-color:var(--danger); color:var(--danger)" onclick="sendSerial('SYSTEM:REBOOT')">Reboot MCU</button>
+        <button class="task-btn" style="border-color:var(--accent2); color:var(--accent2)" onclick="sendSerial('SYSTEM:PING')">Ping Hardware</button>
+      </div>
+      <div class="stat-label" style="margin-top:20px; font-size:9px; opacity:0.6;">Scripts are sent directly to the Neural Bridge.</div>
     </div>
   </div>
 
