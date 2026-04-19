@@ -133,7 +133,7 @@
   </div>
 
   <!-- Window: Macros -->
-  <div class="window hidden" id="win-macros" style="top:200px;left:300px;width:380px">
+  <div class="window hidden" id="win-macros" style="top:200px;left:300px;width:400px">
     <div class="win-bar">
       <span>⬡ macro-manager</span>
       <div class="win-controls">
@@ -142,16 +142,21 @@
       </div>
     </div>
     <div class="win-body">
-      <div class="stat-label" style="margin-bottom:15px;">Hardware Automation Library</div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-        <button class="task-btn" onclick="sendSerial('SCAN:WIFI')">Scan WiFi</button>
-        <button class="task-btn" onclick="sendSerial('OLED:PATTERN:01')">Test OLED</button>
-        <button class="task-btn" onclick="sendSerial('SYS:GET:LOGS')">Fetch Logs</button>
-        <button class="task-btn" onclick="sendSerial('LED:BLINK:SOS')">Signal Alert</button>
-        <button class="task-btn" style="border-color:var(--danger); color:var(--danger)" onclick="sendSerial('SYSTEM:REBOOT')">Reboot MCU</button>
-        <button class="task-btn" style="border-color:var(--accent2); color:var(--accent2)" onclick="sendSerial('SYSTEM:PING')">Ping Hardware</button>
+      <!-- Criar novo macro -->
+      <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <input id="macro-name" placeholder="Nome (ex: Piscar LED)" 
+               style="flex:1; background:rgba(0,0,0,0.4); border:1px solid var(--border); 
+                      color:var(--text); padding:6px 10px; font-family:inherit; font-size:11px;" />
+        <input id="macro-cmd" placeholder="Comando serial (ex: LED:BLINK:SOS)" 
+               style="flex:1.5; background:rgba(0,0,0,0.4); border:1px solid var(--border); 
+                      color:var(--text); padding:6px 10px; font-family:inherit; font-size:11px;" />
+        <button class="task-btn" onclick="addMacro()" style="white-space:nowrap">+ ADD</button>
       </div>
-      <div class="stat-label" style="margin-top:20px; font-size:9px; opacity:0.6;">Scripts are sent directly to the Neural Bridge.</div>
+      <!-- Lista de macros -->
+      <div id="macro-list" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;"></div>
+      <div class="stat-label" style="margin-top:15px; font-size:9px; opacity:0.5;">
+        Macros enviados diretamente ao hardware vinculado via Serial.
+      </div>
     </div>
   </div>
 

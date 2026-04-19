@@ -1,6 +1,6 @@
 /**
- * NerveOS v0.6.7 — THE SHIP
- * Final polish and Field Guide integration.
+ * NerveOS v0.6.9 — MACRO BUILDER
+ * Dynamic hardware automation logic.
  */
 
 const CONFIG = {
@@ -31,7 +31,7 @@ const DEFAULT_FS = {
   '/dev': { type: 'dir', content: ['oled0', 'serial0', 'encoder0'] },
   '/notes': { type: 'dir', content: [] },
   '/manual.txt': { type: 'file', content: MANUAL_CONTENT },
-  '/readme.txt': { type: 'file', content: 'NerveOS v0.6.7\nAbsolute Cinema Aesthetic: ACTIVE.\nField Operations: READY.' }
+  '/readme.txt': { type: 'file', content: 'NerveOS v0.6.9\nDynamic Automations: ENABLED.' }
 };
 
 const STATE = {
@@ -52,9 +52,68 @@ const STATE = {
   activeNotePath: null
 };
 
+const DEFAULT_MACROS = [
+  { name: 'Ping HW',      cmd: 'SYSTEM:PING' },
+  { name: 'Reboot MCU',   cmd: 'SYSTEM:REBOOT' },
+  { name: 'Scan WiFi',    cmd: 'SCAN:WIFI' },
+  { name: 'Blink SOS',    cmd: 'LED:BLINK:SOS' },
+];
+
 // ── Persistence ──
 function saveFS() { localStorage.setItem('nerve_fs', JSON.stringify(STATE.fs)); }
 function saveHistory() { localStorage.setItem('nerve_history', JSON.stringify(STATE.termHistory)); }
+
+// ── Macro Manager Logic ──
+function loadMacros() {
+  return JSON.parse(localStorage.getItem('nerve_macros') || JSON.stringify(DEFAULT_MACROS));
+}
+function saveMacros(macros) {
+  localStorage.setItem('nerve_macros', JSON.stringify(macros));
+}
+function renderMacros() {
+  const list = document.getElementById('macro-list');
+  if (!list) return;
+  const macros = loadMacros();
+  list.innerHTML = '';
+  macros.forEach((m, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'task-btn';
+    btn.style.display = 'flex';
+    btn.style.justifyContent = 'space-between';
+    btn.style.alignItems = 'center';
+    btn.innerHTML = `<span>${m.name}</span><span style="font-size:9px; opacity:0.5; margin-left:8px;">✕</span>`;
+    btn.addEventListener('click', (e) => {
+      if (e.target.tagName === 'SPAN' && e.target.textContent === '✕') {
+        deleteMacro(i);
+      } else {
+        sendSerial(m.cmd);
+        notify(`▶ ${m.name}`);
+        NerveAudio.play('click');
+      }
+    });
+    list.appendChild(btn);
+  });
+}
+function addMacro() {
+  const name = document.getElementById('macro-name').value.trim();
+  const cmd  = document.getElementById('macro-cmd').value.trim();
+  if (!name || !cmd) return notify('⚠ Preencha nome e comando');
+  const macros = loadMacros();
+  macros.push({ name, cmd });
+  saveMacros(macros);
+  document.getElementById('macro-name').value = '';
+  document.getElementById('macro-cmd').value = '';
+  renderMacros();
+  notify(`✓ Macro "${name}" salvo`);
+  NerveAudio.play('notif');
+}
+function deleteMacro(i) {
+  const macros = loadMacros();
+  macros.splice(i, 1);
+  saveMacros(macros);
+  renderMacros();
+  notify('Macro removido');
+}
 
 const NerveAudio = {
   ctx: null,
@@ -88,27 +147,21 @@ const NerveAudio = {
   }
 };
 
-const BOOT_LINES = [
-  "NerveOS v0.6.7 initializing...",
-  "Loading Director's Workspace...",
-  "Calibrating neural interface...",
-  "System status: ABSOLUTE CINEMA",
-  "Welcome back, Director."
-];
-
 async function runBoot() {
   try {
     const lineEl = document.getElementById('boot-line');
     document.addEventListener('mousedown', () => NerveAudio.init(), { once: true });
     if (lineEl) {
-      for (const line of BOOT_LINES) { lineEl.textContent = line; await new Promise(r => setTimeout(r, CONFIG.BOOT_SPEED)); }
+      for (const line of ["Initializing Macro Engine...", "Loading Workspace...", "System status: ABSOLUTE CINEMA", "Welcome back, Director."]) { 
+        lineEl.textContent = line; await new Promise(r => setTimeout(r, CONFIG.BOOT_SPEED)); 
+      }
     }
     setTimeout(() => {
       document.getElementById('boot')?.classList.add('hidden');
       document.getElementById('desktop')?.classList.remove('hidden');
       initSystem();
       NerveAudio.play('boot');
-      notify("NerveOS v0.6.7 — OPERATIONAL");
+      notify("NerveOS v0.6.9 Online");
     }, 400);
   } catch (e) {
     document.getElementById('boot')?.classList.add('hidden');
@@ -154,13 +207,13 @@ function openWindow(id) {
   const win = document.getElementById(`win-${id}`);
   if (win) {
     win.classList.remove('hidden');
-    // Minimal delay to allow CSS transition to trigger
     setTimeout(() => win.classList.add('win-visible'), 10);
     bringToFront(win);
     document.querySelectorAll(`[data-open="${id}"]`).forEach(el => el.classList.add('active'));
     STATE.processes.set(id, Date.now());
     if (id === 'files') renderExplorer();
     if (id === 'processes') renderProcesses();
+    if (id === 'macros') renderMacros();
   }
 }
 
@@ -283,7 +336,7 @@ const COMMANDS = {
   },
   clear: () => { document.getElementById('term-output').innerHTML = ''; return null; },
   uptime: () => `${Math.floor((Date.now() - CONFIG.START_TIME)/1000)}s`,
-  version: () => `NerveOS v0.6.7 — THE SHIP`
+  version: () => `NerveOS v0.6.9 — MACRO BUILDER`
 };
 
 function runTermCmd(cmd) {
@@ -295,7 +348,7 @@ function printToTerminal(text, cls = '') {
   const output = document.getElementById('term-output');
   if (!output) return;
   const div = document.createElement('div');
-  div.className = `t-line \${cls}`;
+  div.className = `t-line ${cls}`;
   div.textContent = text;
   output.appendChild(div);
   output.scrollTop = output.scrollHeight;
@@ -313,7 +366,6 @@ function initTerminal() {
       printHighlightedLine(val);
       const [cmd, ...args] = val.split(' ');
       const cleanCmd = cmd.replace('-', '_');
-      
       if (COMMANDS[cleanCmd]) {
         const res = COMMANDS[cleanCmd](args);
         if (res) printToTerminal(res, 'info');
@@ -322,7 +374,7 @@ function initTerminal() {
           printToTerminal(`→ Sent to hardware`, 'serial-out');
         });
       } else {
-        printToTerminal(`Unknown: \${cmd} (no hardware linked)`, 'err');
+        printToTerminal(`Unknown: ${cmd} (no hardware linked)`, 'err');
       }
     }
   });
@@ -330,9 +382,9 @@ function initTerminal() {
   function printHighlightedLine(raw) {
     const parts = raw.split(" "); const cmd = parts[0]; const args = parts.slice(1);
     const div = document.createElement("div"); div.className = "t-line";
-    const prompt = `<span class="t-muted">nerve@os:\${STATE.currentDir}$ </span>`;
-    const cmdSpan = `<span class="\${COMMANDS[cmd.replace('-','_')] ? "t-cmd" : "err"}">\${cmd}</span>`;
-    const argsSpan = args.map(arg => ` <span class="\${arg.startsWith("-") ? "t-arg" : "t-path"}">\${arg}</span>`).join("");
+    const prompt = `<span class="t-muted">nerve@os:${STATE.currentDir}$ </span>`;
+    const cmdSpan = `<span class="${COMMANDS[cmd.replace('-','_')] ? "t-cmd" : "err"}">${cmd}</span>`;
+    const argsSpan = args.map(arg => ` <span class="${arg.startsWith("-") ? "t-arg" : "t-path"}">${arg}</span>`).join("");
     div.innerHTML = prompt + cmdSpan + argsSpan;
     output.appendChild(div); output.scrollTop = output.scrollHeight;
   }
@@ -357,7 +409,7 @@ function handleSerialData(raw) {
       if (key === "ENC") { const encEl = document.getElementById("stat-enc"); if (encEl) encEl.textContent = val + " rpm"; }
     });
   }
-  printToTerminal(`← \${line}`, 'serial-in');
+  printToTerminal(`← ${line}`, 'serial-in');
 }
 
 async function sendSerial(data) {
@@ -375,7 +427,6 @@ async function initSerial() {
       STATE.serialPort = port; STATE.serialWriter = port.writable.getWriter();
       btn.textContent = 'LINKED'; btn.classList.add('linked'); notify('🔗 Hardware Vinculado');
       if (status) { status.textContent = 'CONNECTED'; status.style.color = 'var(--accent)'; }
-      
       const reader = port.readable.getReader();
       let buffer = '';
       (async () => {
@@ -450,6 +501,7 @@ function initShortcuts() {
 
 function initSystem() {
   initWindows(); initTerminal(); initMonitor(); initSettings(); initSerial(); initNotes(); initShortcuts();
+  renderMacros();
   const unlockBtn = document.getElementById('btn-unlock');
   if (unlockBtn) unlockBtn.addEventListener('click', () => { document.getElementById('lock-screen').classList.add('hidden'); NerveAudio.play('click'); });
   openWindow('terminal');
