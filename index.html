@@ -190,14 +190,6 @@
           </div>
           <button class="task-btn" id="btn-connect" style="margin:0; border-color:var(--accent2); color:var(--accent2)">LINK DEVICE</button>
         </div>
-        <div class="stat-card full">
-          <div class="stat-label">Quick Actions</div>
-          <div style="display:flex; gap:8px; margin-top:8px;">
-            <button class="task-btn mini-btn" data-macro="clear-oled">Clear OLED</button>
-            <button class="task-btn mini-btn" data-macro="ping-hw">Ping HW</button>
-            <button class="task-btn mini-btn" data-macro="reboot-mcu" style="border-color:var(--danger); color:var(--danger)">Reboot</button>
-          </div>
-        </div>
         <div class="stat-card">
           <div class="stat-label">ENCODER</div>
           <div class="stat-val" id="stat-enc">0 rpm</div>
@@ -235,6 +227,16 @@
           <option value="cyber1">Neon Grid</option>
           <option value="cyber2">Deep Space</option>
           <option value="cyber3">Terminal Green</option>
+          <option value="cinema1">Industrial Circuit</option>
+          <option value="cinema2">Abstract Dark Tech</option>
+        </select>
+      </div>
+      <div class="settings-group" style="margin-top:15px">
+        <div class="stat-label">Serial Baud Rate</div>
+        <select id="baud-select" class="settings-select" onchange="saveBaud(this.value)">
+          <option value="9600">9600</option>
+          <option value="115200" selected>115200</option>
+          <option value="230400">230400</option>
         </select>
       </div>
       <div class="settings-group" style="margin-top:15px">
@@ -255,16 +257,24 @@
   </div>
 
   <!-- Window: Notes -->
-  <div class="window hidden" id="win-notes" style="top:250px;left:200px;width:400px">
+  <div class="window hidden" id="win-notes" style="top:250px;left:200px;width:450px;height:400px;">
     <div class="win-bar">
-      <span>⬡ notes</span>
+      <span>⬡ notes-pro</span>
       <div class="win-controls">
         <button class="win-max" data-max="notes">◻</button>
         <button class="win-close" data-close="notes">×</button>
       </div>
     </div>
-    <div class="win-body">
-      <textarea id="notes-area" placeholder="Persistent session notes..."></textarea>
+    <div class="win-body" style="display:flex; flex-direction:column; height:100%;">
+      <div style="display:flex; gap:6px; padding:8px 0; border-bottom:1px solid var(--border); margin-bottom:8px; flex-shrink:0;">
+        <button class="task-btn mini-btn" onclick="newNote()">+ New</button>
+        <button class="task-btn mini-btn" onclick="exportNote()">↓ Export .md</button>
+        <span id="notes-filename" style="font-size:9px; color:var(--muted); margin-left:auto; align-self:center;">
+          untitled.md
+        </span>
+      </div>
+      <textarea id="notes-area" placeholder="# Session Notes&#10;&#10;Use markdown..." 
+                style="flex:1; resize:none;"></textarea>
     </div>
   </div>
 

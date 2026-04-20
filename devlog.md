@@ -126,4 +126,24 @@ The terminal is no longer a sandbox. It’s a live wire.
 3.  **Smart Buffering:** Improved the serial reader logic to handle fragmented data packets without breaking the UI.
 
 **Current Status:** v0.6.8 - COMMUNICATION ESTABLISHED.
-**Next Up:** Dynamic Macro Builder (moving away from hardcoded buttons). 🛠️
+
+### v0.6.9 — CUSTOM MACRO BUILDER 🛠️
+Hardcoded buttons are dead. The v0.6.9 update turned the Macro Manager into a real automation library.
+
+**What was implemented:**
+1.  **Dynamic Macros:** I can now create, delete, and rename my own hardware macros directly in the UI. 
+2.  **LocalStorage Integration:** Every macro I build is saved in the browser. My automation workflow is now permanent.
+3.  **One-Tap Execution:** Clicking a macro sends the raw command string to the ESP32 instantly with visual confirmation.
+
+**Current Status:** v0.6.9 - AUTOMATION UNLOCKED.
+
+### v0.7.0 — THE DIRECTOR'S CUT 💎
+This is the big one. We moved from a visual prototype to a real developer tool.
+
+**Final v0.7 Features:**
+1.  **Notes Pro:** Added a real workflow. I can now write documentation inside NerveOS and export it as .md files for the real world.
+2.  **Baud Rate Control:** The OS is now hardware-agnostic. Whether it's 9600 or 115200, the bridge adapts via the new Settings panel.
+3.  **Final Core Polish:** Synchronized the file system, macros, and serial dialogue into a single cohesive environment. 
+4.  **Production README:** Total project rebrand. It’s not just code; it’s a professional utility now.
+
+**Current Status:** v0.7.0 - PRODUCTION READY. 🚀
