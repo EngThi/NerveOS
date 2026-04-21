@@ -1,4 +1,4 @@
-# NerveOS v0.7.0 — THE DIRECTOR'S CUT 🎬
+# NerveOS v0.7.0
 
 **A professional browser-based OS for embedded developers.** 
 Connect your ESP32 via USB and get a real serial console, hardware monitor, and dynamic macro launcher — all in one cyberpunk interface.
