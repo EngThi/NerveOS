@@ -1,79 +1,79 @@
-# NerveOS v0.7.1 — The Director's Cut 🎬
+# NerveOS v0.7.1
 **33h 16m logged | 27 devlogs**
 
-NerveOS is a web-based workstation designed for embedded developers and hardware enthusiasts. It functions as a "Digital Twin" and mission control for physical devices, specifically tailored to handle real-time serial data and hardware automation.
+NerveOS is a web-based workstation for embedded developers. It acts as a "Digital Twin" and mission control for physical devices, specifically built to handle real-time serial data and hardware automation.
 
-## The Motivation 🔧
+## The Motivation
 
-I've always been fascinated by the process of "connecting things"—the bridge between raw code and physical hardware. This project was born from a very specific need: while developing [The Nerve](https://github.com/EngThi/The-Nerve), my physical ESP32-S3 cyberdeck, I wanted a clean, professional dashboard to monitor its telemetry and send commands without having to rely on the generic (and often cluttered) Arduino Serial Monitor.
+I've always been fascinated by the process of "connecting things"—the bridge between raw code and physical hardware. This project was born while developing [The Nerve](https://github.com/EngThi/The-Nerve), my physical ESP32-S3 cyberdeck. I wanted a professional dashboard to monitor telemetry and send commands without relying on generic serial monitors.
 
-NerveOS is the software side of that passion. It’s an environment that respects the "Absolute Cinema" aesthetic while providing actual utility for field operations.
+NerveOS is the software side of that passion, providing actual utility for field operations.
 
 ---
 
-## Core Features 🛠️
+## Core Features
 
 ### 1. Real Bidirectional Serial Console
-Unlike most Web-OS projects that are purely cosmetic, NerveOS uses the **Web Serial API** to talk to hardware.
-* **Green lines (←):** Data coming from the ESP32.
-* **Yellow lines (→):** Commands sent from the browser.
-* Supports multiple Baud Rates (9600, 115200, 230400).
+NerveOS uses the **Web Serial API** for real communication with hardware.
+* **Green lines (←):** Data from the ESP32.
+* **Yellow lines (→):** Commands from the browser.
+* Supports 9600, 115200, and 230400 Baud Rates.
 
-![Serial Console in Action](assets/serial-console.png)
+![Serial Console](assets/serial-console.png)
 
 ### 2. Hardware Monitor & Telemetry
-A dedicated dashboard to track your device's health in real-time.
-* **CPU Load:** Visualized via a real-time rolling graph.
-* **Live Stats:** Monitor temperature, encoder RPM, and system uptime.
-* **Bridge Status:** Instantly see if your hardware is LINKED or DISCONNECTED.
+Real-time tracking of device health.
+* **CPU Load:** Visualized via a real-time graph.
+* **Live Stats:** Temperature, encoder RPM, and system uptime.
+* **Bridge Status:** LINKED or DISCONNECTED indicators.
 
 ![Hardware Monitor](assets/monitor.png)
 
-### 3. Neural Flash IDE (Hardware Simulator)
-For users without a physical microcontroller, I built a micro-IDE that simulates the entire deployment process.
-* **Verification:** It requires a real USB device connection before initiating the "flash" sequence.
-* **Mock Telemetry:** Once "flashed," it injects high-fidelity CPU and temperature data into the system.
+### 3. Neural Flash IDE (Simulator)
+For testing without physical microcontrollers.
+* **Verification:** Requires a USB device connection to initiate the sequence.
+* **Mock Telemetry:** Injects high-fidelity CPU and temperature data.
 
 ![Neural Flash IDE](assets/simulator-ide.png)
 
 ### 4. Dynamic Macro Builder
-A dedicated library for hardware automation.
-* Add, edit, and delete custom serial commands.
-* All macros are persisted in the browser's local storage.
+Library for hardware automation.
+* Create and delete custom serial commands.
+* Persistent storage via localStorage.
 
 ![Macro Manager](assets/macro-manager.png)
 
 ### 5. Notes Pro & Persistence
-A built-in Markdown editor to document your sessions.
+Built-in Markdown editor for documentation.
 * **Auto-Sync:** Real-time saving to the virtual file system.
-* **Export:** Download your technical logs as `.md` files.
+* **Export:** Download logs as .md files.
 
 ---
 
-## Technical Visuals 🎞️
+## Technical Visuals
 
-The OS uses a customized "Absolute Cinema" theme:
-* **Sharp Borders:** 4px industrial-style window borders.
-* **Deep Glassmorphism:** 20px blur with high-saturation backdrops.
-* **CRT Simulation:** Integrated scanlines and flicker effects for that vintage hardware feel.
-* **Mobile Ready:** A specific "Mission Control" layout for field use on smartphones.
+Industrial-style theme:
+* **Sharp Borders:** 4px window borders.
+* **Deep Glassmorphism:** 20px blur with high-saturation.
+* **CRT Simulation:** Integrated scanlines and flicker effects.
+* **Mobile Ready:** Dedicated layout for smartphones.
 
 ![Desktop Overview](assets/hero-shot.png)
 
-## Hardware Setup 🔌
+## Hardware Setup
 
-1. **Firmware:** Flash the provided `firmware/firmware.ino` to your ESP32.
-2. **Connection:** Open the OS in Chrome/Edge and click **LINK DEVICE**.
-3. **Simulation:** If you have no ESP32, use the **SIMULATOR** button in the HW Monitor app.
+1. **Firmware:** Flash `firmware/firmware.ino` to your ESP32.
+2. **Connection:** Click **LINK DEVICE** in HW Monitor.
+3. **Simulation:** Use the **SIMULATOR** button if you have no physical hardware.
 
 ---
 
 ## Credits
-Built with passion by **ChefThi** (The Director), for other directors.  
-Inspired by the hardware hacking community and the need for better dev tools. In addition to having something more connected to my own cyberdeck 💻
+Built by **ChefThi** (The Director).  
+Inspired by the hardware hacking community and the need for better development tools.
 
 ---
 
-## AI Declaration 🤖⚖️
+## AI Declaration
 
-While the vision, hardware architecture, and core logic of NerveOS were driven by human passion for engineering, **Gemini CLI** was utilized as a high-end "Director’s Assistant" throughout the final stages of the project. Specific use cases included deep CSS debugging, technical research on Web Serial API patterns, and logic completion for dynamic UI rendering.
+While the vision and core logic were driven by human passion, **Gemini CLI** was used as a technical assistant during the final stages. Specific uses included debugging complex CSS layouts, researching Web Serial API patterns, and finalizing dynamic rendering loops.
