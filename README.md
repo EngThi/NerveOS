@@ -57,15 +57,6 @@ I wanted an industrial look that’s actually usable on a phone:
 2. **Link:** Hit **LINK DEVICE** in the HW Monitor.
 3. **No Hardware?** Use the **SIMULATOR** button to see how the telemetry looks.
 
----
-
-## AI Usage Disclosure
-
-I'm writing this myself now because I messed up the last one. I actually used AI to write that previous declaration because I was scared I wouldn't be able to explain exactly how and where I used it in English. I also used AI to translate the whole README and to help me get the technical tone right for each section.
-
-For the project itself, I used AI to help me with CSS debugging (like the scrollbars and contrast) because fixing that on a mobile browser is a pain. I also used it to research how to handle Web Serial buffers and the logic for exporting Markdown files. It also helped me refactor some of the loops in the Macro Builder when I got stuck.
-
-The core logic and the project idea are mine. I just used AI as a tool for translation and to help me when I hit a wall with specific technical parts.
 
 ---
 
