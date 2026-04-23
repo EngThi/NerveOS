@@ -1,5 +1,4 @@
-# NerveOS v0.7.1 — The Director's Cut 🎬
-**33h 16m logged | 27 devlogs**
+# NerveOS v0.7.1
 
 NerveOS is a web-based workstation designed for embedded developers and hardware enthusiasts. It functions as a "Digital Twin" and mission control for physical devices, specifically tailored to handle real-time serial data and hardware automation.
 
@@ -15,51 +14,53 @@ NerveOS is the software side of that passion. It’s an environment that respect
 
 ### 1. Real Bidirectional Serial Console
 Unlike most Web-OS projects that are purely cosmetic, NerveOS uses the **Web Serial API** to talk to hardware.
-*   **Green lines (←):** Data coming from the ESP32.
-*   **Yellow lines (→):** Commands sent from the browser.
-*   Supports multiple Baud Rates (9600, 115200, 230400).
+* **Green lines (←):** Data coming from the ESP32.
+* **Yellow lines (→):** Commands sent from the browser.
+* Supports multiple Baud Rates (9600, 115200, 230400).
 
 ![Serial Console in Action](assets/serial-console.png)
 
 ### 2. Neural Flash IDE (Hardware Simulator)
 For users without a physical microcontroller, I built a micro-IDE that simulates the entire deployment process.
-*   **Verification:** It requires a real USB device connection before initiating the "flash" sequence.
-*   **Mock Telemetry:** Once "flashed," it injects high-fidelity CPU and temperature data into the system.
+* **Verification:** It requires a real USB device connection before initiating the "flash" sequence.
+* **Mock Telemetry:** Once "flashed," it injects high-fidelity CPU and temperature data into the system.
 
 ![Neural Flash IDE](assets/simulator-ide.png)
 
 ### 3. Dynamic Macro Builder
 A dedicated library for hardware automation.
-*   Add, edit, and delete custom serial commands.
-*   All macros are persisted in the browser's local storage.
+* Add, edit, and delete custom serial commands.
+* All macros are persisted in the browser's local storage.
 
 ![Macro Manager](assets/macro-manager.png)
 
 ### 4. Notes Pro & Persistence
 A built-in Markdown editor to document your sessions.
-*   **Auto-Sync:** Real-time saving to the virtual file system.
-*   **Export:** Download your technical logs as `.md` files.
+* **Auto-Sync:** Real-time saving to the virtual file system.
+* **Export:** Download your technical logs as `.md` files.
 
 ---
 
-## Technical Visuals 🎞️
+## Technical Visuals 
 
 The OS uses a customized "Absolute Cinema" theme:
-*   **Sharp Borders:** 4px industrial-style window borders.
-*   **Deep Glassmorphism:** 20px blur with high-saturation backdrops.
-*   **CRT Simulation:** Integrated scanlines and flicker effects for that vintage hardware feel.
-*   **Mobile Ready:** A specific "Mission Control" layout for field use on smartphones.
+* **Sharp Borders:** 4px industrial-style window borders.
+* **Deep Glassmorphism:** 20px blur with high-saturation backdrops.
+* **CRT Simulation:** Integrated scanlines and flicker effects for that vintage hardware feel.
+* **Mobile Ready:** A specific "Mission Control" layout for field use on smartphones.
 
 ![Desktop Overview](assets/hero-shot.png)
 
-## Hardware Setup 🔌
+##Hardware Setup
 
-1.  **Firmware:** Flash the provided `firmware/firmware.ino` to your ESP32.
-2.  **Connection:** Open the OS in Chrome/Edge and click **LINK DEVICE**.
-3.  **Simulation:** If you have no ESP32, use the **SIMULATOR** button in the HW Monitor app.
+1. **Firmware:** Flash the provided `firmware/firmware.ino` to your ESP32.
+2. **Connection:** Open the OS in Chrome/Edge and click **LINK DEVICE**.
+3. **Simulation:** If you have no ESP32, use the **SIMULATOR** button in the HW Monitor app.
 
 ---
 
 ## Credits
-Built with passion by **ChefThi** (The Director).  
-Inspired by the hardware hacking community and the need for better dev tools. 🚀🎬
+Built with passion by **ChefThi** (The Director), for other directors.  
+Inspired by the hardware hacking community and the need for better dev tools. In addition to having something more connected to my own cyberdeck 💻
+
+ 
