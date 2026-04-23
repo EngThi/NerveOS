@@ -1,5 +1,4 @@
 # NerveOS v0.7.1
-**33h 16m logged | 27 devlogs**
 
 NerveOS is a web-based workstation for embedded developers. It acts as a "Digital Twin" and mission control for physical devices, specifically built to handle real-time serial data and hardware automation.
 
@@ -70,10 +69,4 @@ Industrial-style theme:
 
 ## Credits
 Built by **ChefThi** (The Director).  
-Inspired by the hardware hacking community and the need for better development tools.
-
----
-
-## AI Declaration
-
-While the vision and core logic were driven by human passion, **Gemini CLI** was used as a technical assistant during the final stages. Specific uses included debugging complex CSS layouts, researching Web Serial API patterns, and finalizing dynamic rendering loops.
+Inspired by the hardware hacking community and the need for better development tools. In addition to something else to connect to my cyberdeck. 😁😎
