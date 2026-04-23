@@ -18,7 +18,7 @@
 </div>
 
 <!-- LOCK SCREEN -->
-<div id="lock-screen" style="background: url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop') center/cover;">
+<div id="lock-screen" style="background: #000;">
   <div class="lock-box">
     <div class="logo" style="font-size:40px; margin-bottom:10px; color:var(--accent);">⬡</div>
     <div class="stat-label" style="letter-spacing: 2px;">SECURE ACCESS</div>
@@ -202,20 +202,20 @@ void loop() {
       </div>
     </div>
     <div class="win-body">
-      <!-- Criar novo macro -->
+      <!-- Create new macro -->
       <div style="display:flex; gap:8px; margin-bottom:12px;">
-        <input id="macro-name" placeholder="Nome (ex: Piscar LED)" 
+        <input id="macro-name" placeholder="Name (ex: Blink LED)" 
                style="flex:1; background:rgba(0,0,0,0.4); border:1px solid var(--border); 
                       color:var(--text); padding:6px 10px; font-family:inherit; font-size:11px;" />
-        <input id="macro-cmd" placeholder="Comando serial (ex: LED:BLINK:SOS)" 
+        <input id="macro-cmd" placeholder="Serial command (ex: LED:BLINK:SOS)" 
                style="flex:1.5; background:rgba(0,0,0,0.4); border:1px solid var(--border); 
                       color:var(--text); padding:6px 10px; font-family:inherit; font-size:11px;" />
         <button class="task-btn" onclick="addMacro()" style="white-space:nowrap">+ ADD</button>
       </div>
-      <!-- Lista de macros -->
+      <!-- Macro list -->
       <div id="macro-list" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;"></div>
       <div class="stat-label" style="margin-top:15px; font-size:9px; opacity:0.5;">
-        Macros enviados diretamente ao hardware vinculado via Serial.
+        Macros sent directly to the linked hardware via Serial.
       </div>
     </div>
   </div>
@@ -362,7 +362,7 @@ void loop() {
     </div>
     <div class="win-body about-body">
       <div class="about-logo">⬡</div>
-      <div class="about-title">NerveOS v0.7.0</div>
+      <div class="about-title">NerveOS v0.7.1</div>
       <div class="about-sub">The Nerve Cyberdeck Core</div>
       <hr class="about-hr"/>
       <div class="about-row"><span>Hardware</span><span>ESP32-S3 / RP2040</span></div>

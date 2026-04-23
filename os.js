@@ -1,5 +1,5 @@
 /**
- * NerveOS v0.7.0 — THE DIRECTOR'S CUT
+ * NerveOS v0.7.1 — THE DIRECTOR'S CUT
  * Fixed logic for Macro Builder and Serial Console.
  */
 
@@ -23,7 +23,7 @@ Files and Macros are saved to localStorage. Use 'reset-fs' to wipe.
 Write your devlogs in Notes and export as .md for Flavortown.
 
 SYSTEM STATUS: OPERATIONAL
-VERSION: v0.7.0`;
+VERSION: v0.7.1`;
 
 const DEFAULT_FS = {
   '/': { type: 'dir', content: ['bin', 'usr', 'dev', 'notes', 'manual.txt', 'readme.txt'] },
@@ -31,7 +31,7 @@ const DEFAULT_FS = {
   '/dev': { type: 'dir', content: ['oled0', 'serial0', 'encoder0'] },
   '/notes': { type: 'dir', content: [] },
   '/manual.txt': { type: 'file', content: MANUAL_CONTENT },
-  '/readme.txt': { type: 'file', content: 'NerveOS v0.7.0\nEmbedded Dev Environment Ready.' }
+  '/readme.txt': { type: 'file', content: 'NerveOS v0.7.1\nEmbedded Dev Environment Ready.' }
 };
 
 const STATE = {
@@ -93,14 +93,14 @@ function addMacro() {
   const cmdInput = document.getElementById('macro-cmd');
   const name = nameInput.value.trim();
   const cmd  = cmdInput.value.trim();
-  if (!name || !cmd) return notify('⚠ Preencha nome e comando');
+  if (!name || !cmd) return notify('⚠ Fill in name and command');
   const macros = loadMacros();
   macros.push({ name, cmd });
   saveMacros(macros);
   nameInput.value = '';
   cmdInput.value = '';
   renderMacros();
-  notify(`✓ Macro "${name}" salvo`);
+  notify(`✓ Macro "${name}" saved`);
   NerveAudio.play('notif');
 }
 
@@ -109,12 +109,12 @@ function deleteMacro(i) {
   macros.splice(i, 1);
   saveMacros(macros);
   renderMacros();
-  notify('Macro removido');
+  notify('Macro removed');
 }
 
 // ── Notes ──
 function newNote() {
-  const name = prompt('Nome do arquivo (sem .md):', 'session-' + new Date().toISOString().slice(0,10));
+  const name = prompt('Filename (without .md):', 'session-' + new Date().toISOString().slice(0,10));
   if (!name) return;
   const path = `/notes/${name}.md`;
   STATE.fs[path] = { type: 'file', content: `# ${name}\n\n` };
@@ -123,12 +123,12 @@ function newNote() {
   STATE.activeNotePath = path;
   document.getElementById('notes-area').value = STATE.fs[path].content;
   document.getElementById('notes-filename').textContent = `${name}.md`;
-  notify(`✓ ${name}.md criado`);
+  notify(`✓ ${name}.md created`);
 }
 
 function exportNote() {
   const content = document.getElementById('notes-area')?.value || '';
-  if (!content.trim()) return notify('⚠ Nota vazia');
+  if (!content.trim()) return notify('⚠ Empty note');
   const filename = (STATE.activeNotePath?.split('/').pop()) || 'nerveos-notes.md';
   const blob = new Blob([content], { type: 'text/markdown' });
   const a = document.createElement('a');
@@ -136,7 +136,7 @@ function exportNote() {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
-  notify(`↓ Exportado: ${filename}`);
+  notify(`↓ Exported: ${filename}`);
   NerveAudio.play('notif');
 }
 
@@ -161,13 +161,13 @@ async function runBoot() {
   try {
     const lineEl = document.getElementById('boot-line');
     document.addEventListener('mousedown', () => NerveAudio.init(), { once: true });
-    if (lineEl) { for (const line of ["Initializing v0.7.0...", "Loading Dev Tools...", "System status: ABSOLUTE CINEMA", "Ready."]) { lineEl.textContent = line; await new Promise(r => setTimeout(r, CONFIG.BOOT_SPEED)); } }
+    if (lineEl) { for (const line of ["Initializing v0.7.1...", "Loading Dev Tools...", "System status: ABSOLUTE CINEMA", "Ready."]) { lineEl.textContent = line; await new Promise(r => setTimeout(r, CONFIG.BOOT_SPEED)); } }
     setTimeout(() => {
       document.getElementById('boot')?.classList.add('hidden');
       document.getElementById('desktop')?.classList.remove('hidden');
       initSystem();
       NerveAudio.play('boot');
-      notify("NerveOS v0.7.0 — OPERATIONAL");
+      notify("NerveOS v0.7.1 — OPERATIONAL");
     }, 400);
   } catch (e) {
     document.getElementById('boot')?.classList.add('hidden');
@@ -241,7 +241,7 @@ const COMMANDS = {
   panic: () => { document.querySelectorAll('.window').forEach(win => closeWindow(win.id.replace('win-', ''))); sendSerial("SYSTEM:PANIC"); notify("PANIC PROTOCOL ENGAGED", 5000); return "Panic mode: ACTIVE."; },
   clear: () => { document.getElementById('term-output').innerHTML = ''; return null; },
   uptime: () => `${Math.floor((Date.now() - CONFIG.START_TIME)/1000)}s`,
-  version: () => `NerveOS v0.7.0 — THE DIRECTOR'S CUT`
+  version: () => `NerveOS v0.7.1 — THE DIRECTOR'S CUT`
 };
 
 function runTermCmd(cmd) { const input = document.getElementById("term-input"); if (input) { input.value = cmd; const e = new KeyboardEvent("keydown", { key: "Enter" }); input.dispatchEvent(e); } }
@@ -307,19 +307,19 @@ async function sendSerial(data) {
 async function initSerial() {
   const btn = document.getElementById('btn-connect'); const status = document.getElementById('serial-status'); if (!btn) return;
   btn.addEventListener('click', async () => {
-    if (!('serial' in navigator)) { return notify('⚠ Web Serial API requer Chrome/Edge'); }
+    if (!('serial' in navigator)) { return notify('⚠ Web Serial API requires Chrome/Edge'); }
     try {
       const port = await navigator.serial.requestPort();
       const savedBaud = localStorage.getItem('nerve_baud');
       const baud = (savedBaud && !isNaN(savedBaud)) ? parseInt(savedBaud) : 115200;
       await port.open({ baudRate: baud });
       STATE.serialPort = port; STATE.serialWriter = port.writable.getWriter();
-      btn.textContent = 'LINKED'; btn.classList.add('linked'); notify('🔗 Hardware Vinculado');
+      btn.textContent = 'LINKED'; btn.classList.add('linked'); notify('🔗 Hardware Linked');
       if (status) { status.textContent = 'CONNECTED'; status.style.color = 'var(--accent)'; }
       const reader = port.readable.getReader();
       let buffer = '';
-      (async () => { try { while (true) { const { value, done } = await reader.read(); if (done) { reader.releaseLock(); break; } buffer += new TextDecoder().decode(value); const lines = buffer.split('\n'); buffer = lines.pop(); lines.forEach(line => handleSerialData(line)); } } catch (e) { notify('⚠ Serial desconectado'); if (status) { status.textContent = 'DISCONNECTED'; status.style.color = 'var(--danger)'; } } })();
-    } catch (err) { notify('⚠ Falha: ' + err.message); if (status) { status.textContent = 'LINK ERROR'; status.style.color = 'var(--danger)'; } }
+      (async () => { try { while (true) { const { value, done } = await reader.read(); if (done) { reader.releaseLock(); break; } buffer += new TextDecoder().decode(value); const lines = buffer.split('\n'); buffer = lines.pop(); lines.forEach(line => handleSerialData(line)); } } catch (e) { notify('⚠ Serial Disconnected'); if (status) { status.textContent = 'DISCONNECTED'; status.style.color = 'var(--danger)'; } } })();
+    } catch (err) { notify('⚠ Failure: ' + err.message); if (status) { status.textContent = 'LINK ERROR'; status.style.color = 'var(--danger)'; } }
   });
 }
 
@@ -391,7 +391,7 @@ function initSettings() {
         if (wallpapers[wall]) { 
           desktop.style.backgroundImage = wallpapers[wall]; 
           localStorage.setItem('nerve_wallpaper', wall); 
-          notify("Interface Visual Updated"); 
+          notify("Wallpaper Updated"); 
           NerveAudio.play('click'); 
         } 
       }
@@ -605,8 +605,9 @@ function initSystem() {
     "SUNDAY": "wallpapers/sunday.png"
   };
   const dailyWall = dayWallpaperMap[currentDay];
-  // Set background if the file exists (using a fallback)
-  lockScreen.style.backgroundImage = `url('${dailyWall}'), url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop')`;
+  // Set background if the file exists
+  lockScreen.style.backgroundImage = `url('${dailyWall}')`;
+  lockScreen.style.backgroundColor = "#000"; // Instant fallback
 
   lockUser.textContent = `USER: ${currentDay}_DIRECTOR`;
   lockHint.textContent = `HINT: ${currentDay} | MMDDYYYY`;
