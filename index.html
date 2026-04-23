@@ -18,11 +18,15 @@
 </div>
 
 <!-- LOCK SCREEN -->
-<div id="lock-screen" class="hidden">
+<div id="lock-screen" style="background: url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop') center/cover;">
   <div class="lock-box">
-    <div class="logo" style="font-size:40px; margin-bottom:20px;">⬡</div>
-    <div class="stat-label">SYSTEM LOCKED</div>
-    <button class="task-btn" id="btn-unlock" style="margin-top:20px; width:100%">UNLOCK SESSION</button>
+    <div class="logo" style="font-size:40px; margin-bottom:10px; color:var(--accent);">⬡</div>
+    <div class="stat-label" style="letter-spacing: 2px;">SECURE ACCESS</div>
+    <div id="lock-user" style="font-size: 10px; color: var(--muted); margin: 15px 0 5px;">USER: LOADING...</div>
+    <input type="password" id="lock-input" placeholder="ACCESS KEY" 
+           style="width:100%; background:rgba(0,0,0,0.6); border:1px solid var(--border); color:#fff; padding:10px; font-family:inherit; text-align:center; outline:none; margin-bottom:10px;" />
+    <button class="task-btn" id="btn-unlock" style="width:100%">AUTHORIZE</button>
+    <div id="lock-hint" style="font-size:8px; color:var(--muted); margin-top:15px; opacity:0.6;">HINT: ACCESS_LEVEL_1</div>
   </div>
 </div>
 
@@ -71,7 +75,7 @@
 
   <!-- Windows -->
   <!-- Terminal -->
-  <div class="window hidden" id="win-terminal" style="top:80px;left:60px;width:550px">
+  <div class="window hidden" id="win-terminal" style="top:80px;left:60px;width:550px;height:420px;">
     <div class="win-bar">
       <span>⬡ nerve-terminal</span>
       <div class="win-controls">
@@ -93,7 +97,7 @@
   </div>
 
   <!-- Explorer -->
-  <div class="window hidden" id="win-files" style="top:120px;left:150px;width:480px">
+  <div class="window hidden" id="win-files" style="top:120px;left:150px;width:480px;height:350px;">
     <div class="win-bar">
       <span>⬡ file-explorer</span>
       <div class="win-controls">
@@ -108,7 +112,7 @@
   </div>
 
   <!-- Process Manager -->
-  <div class="window hidden" id="win-processes" style="top:160px;left:400px;width:420px">
+  <div class="window hidden" id="win-processes" style="top:160px;left:400px;width:420px;height:300px;">
     <div class="win-bar">
       <span>⬡ process-manager</span>
       <div class="win-controls">
@@ -129,6 +133,62 @@
         <tbody id="proc-list">
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- Window: Neural Flash IDE -->
+  <div class="window hidden" id="win-arduino" style="top:50px;left:100px;width:600px;height:450px;">
+    <div class="win-bar">
+      <span>⬡ neural-flash-ide</span>
+      <div class="win-controls">
+        <button class="win-max" data-max="arduino">◻</button>
+        <button class="win-close" data-close="arduino">×</button>
+      </div>
+    </div>
+    <div class="win-body" style="background:#1e1e1e; color:#ccc; display:flex; flex-direction:column; height:100%; padding:0;">
+      <div id="ide-steps" style="padding:20px; flex:1; overflow-y:auto;">
+        <!-- Step 1: Board Selection -->
+        <div id="step-1">
+          <h3 style="color:var(--accent); margin-bottom:15px;">Target Selection</h3>
+          <p style="font-size:12px; margin-bottom:20px;">Choose your virtual microcontroller:</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+            <button class="task-btn" onclick="ideSelectBoard('ESP32-S3')">ESP32-S3 (Default)</button>
+            <button class="task-btn" onclick="ideSelectBoard('RP2040')">RP2040 (Pico)</button>
+          </div>
+        </div>
+        <!-- Step 2: Code & Connect -->
+        <div id="step-2" class="hidden">
+          <h3 style="color:var(--accent); margin-bottom:15px;">Firmware: firmware.ino</h3>
+          <pre style="background:#000; padding:10px; font-size:10px; border-radius:4px; height:150px; overflow:auto;">
+void setup() {
+  Serial.begin(115200);
+  Serial.println("NerveOS Node Active");
+}
+
+void loop() {
+  // Sending simulated telemetry...
+  delay(1000);
+}</pre>
+          <p style="font-size:11px; margin-top:15px; color:#aaa;">To initiate simulation, connect ANY device to USB (Phone, Mouse, etc) to provide a valid Serial Port.</p>
+          <button class="task-btn" style="width:100%; margin-top:20px; border-color:var(--accent2); color:var(--accent2)" onclick="ideLinkPhysical()">CONNECT USB & START FLASH</button>
+        </div>
+        <!-- Step 3: Flash Progress -->
+        <div id="step-3" class="hidden">
+          <h3 style="color:var(--accent); margin-bottom:15px;">Deployment in Progress</h3>
+          <div id="ide-console" style="background:#000; color:#0f0; font-family:var(--font); font-size:10px; padding:15px; height:180px; overflow-y:auto;">
+          </div>
+          <div id="flash-bar-container" style="width:100%; height:4px; background:#333; margin-top:15px;">
+            <div id="flash-bar" style="width:0%; height:100%; background:var(--accent); transition:width 0.3s;"></div>
+          </div>
+        </div>
+        <!-- Step 4: Success -->
+        <div id="step-success" class="hidden" style="text-align:center; padding-top:40px;">
+          <div style="font-size:50px; margin-bottom:20px;">✅</div>
+          <h2 style="color:var(--accent)">FLASH SUCCESSFUL</h2>
+          <p style="margin-bottom:30px;">Simulator Mode is now ACTIVE.</p>
+          <button class="task-btn" onclick="closeWindow('arduino')">BACK TO DESKTOP</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -183,12 +243,18 @@
           <div class="stat-label">CPU LOAD %</div>
           <canvas id="cpu-graph" width="300" height="60" style="width:100%;height:60px;margin-top:8px;"></canvas>
         </div>
-        <div class="stat-card full" style="display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <div class="stat-label">Hardware Bridge</div>
-            <div class="stat-val" id="serial-status" style="font-size:12px; color:var(--muted)">DISCONNECTED</div>
+        <div class="stat-card full" style="display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div class="stat-label">Hardware Bridge</div>
+              <div class="stat-val" id="serial-status" style="font-size:12px; color:var(--muted)">DISCONNECTED</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="task-btn mini-btn" onclick="openWindow('arduino')" style="border-color:var(--accent); color:var(--accent)">SIMULATOR</button>
+              <button class="task-btn" id="btn-connect" style="margin:0; border-color:var(--accent2); color:var(--accent2)">LINK DEVICE</button>
+            </div>
           </div>
-          <button class="task-btn" id="btn-connect" style="margin:0; border-color:var(--accent2); color:var(--accent2)">LINK DEVICE</button>
+          <div class="stat-label" style="font-size:8px; opacity:0.6;">Use SIMULATOR if you don't have physical hardware.</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">ENCODER</div>
@@ -229,8 +295,15 @@
           <option value="cyber3">Terminal Green</option>
           <option value="cinema1">Industrial Circuit</option>
           <option value="cinema2">Abstract Dark Tech</option>
+          <option value="custom">Custom URL...</option>
         </select>
-      </div>
+        <input type="text" id="custom-wallpaper-url" placeholder="Paste URL or Ctrl+V image file..." 
+               class="settings-select hidden" style="margin-top:8px; font-size:10px;" />
+        <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+          <input type="checkbox" id="dragdrop-toggle" checked />
+          <span style="font-size:12px;">Desktop Drop-to-Wallpaper</span>
+        </div>
+        </div>
       <div class="settings-group" style="margin-top:15px">
         <div class="stat-label">Serial Baud Rate</div>
         <select id="baud-select" class="settings-select" onchange="saveBaud(this.value)">
