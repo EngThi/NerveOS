@@ -4,7 +4,6 @@
 ![Status](https://img.shields.io/badge/status-operational-green?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
-**33h 16m logged | 27 devlogs**
 
 NerveOS is a web-based workstation I built to talk to my microcontrollers. It’s basically a "Digital Twin" and mission control for my hardware projects, made to handle real-time serial data and automation without the clutter of the standard Arduino monitor.
 
@@ -80,12 +79,6 @@ I wanted an industrial look that’s actually usable on a phone:
 1. **Firmware:** Flash `firmware/firmware.ino` to your ESP32.
 2. **Link:** Hit **LINK DEVICE** in the HW Monitor.
 3. **No Hardware?** Use the **SIMULATOR** button to see how the telemetry looks.
-
----
-
-## AI Declaration 🤖⚖️
-
-While the vision, hardware architecture, and core logic of NerveOS were driven by human passion, **Gemini CLI** was utilized as a technical assistant during the final stages of the project. Specific use cases included deep CSS debugging (custom scrollbars and contrast), technical research on Web Serial API patterns, and finalizing the dynamic rendering loops for the Macro Builder.
 
 ---
 
